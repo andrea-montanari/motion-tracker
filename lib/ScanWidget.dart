@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:multi_sensor_collector/Device.dart';
 import 'package:multi_sensor_collector/DeviceConnectionStatus.dart';
-import 'package:multi_sensor_collector/DeviceInteractionWidget.dart';
 import 'package:multi_sensor_collector/AppModel.dart';
+import 'package:multi_sensor_collector/DevicesConfigurationPage.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
@@ -14,19 +14,18 @@ class ScanWidget extends StatefulWidget {
 
 class _ScanWidgetState extends State<ScanWidget> {
   late AppModel model;
+  bool allDevicesConnected = false;
 
   @override
   void initState() {
     super.initState();
     initPlatformState();
     model = Provider.of<AppModel>(context, listen: false);
-    // TODO: rimuovere le righe sottostanti se non utili
-    // model.onDeviceMdsConnected((device) => Navigator.push(
-    //     context
-    // MaterialPageRoute(
-    //     builder: (context) => DeviceInteractionWidget(device)
-    // )
-    // ));
+    model.onDeviceMdsConnected((device) => {
+      print("Deviced connected: ${model.connectedDeviceList.length} Devices to connect num: ${model.DEVICES_TO_CONNECT_NUM}"),
+      model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM ? allDevicesConnected = true : allDevicesConnected = false,
+    });
+    model.onDeviceMdsDisconnected((device) => model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM ? allDevicesConnected = true : allDevicesConnected = false,);
   }
 
   Future<void> initPlatformState() async {
@@ -74,7 +73,12 @@ class _ScanWidgetState extends State<ScanWidget> {
   }
 
   void onConfigButtonPressed() {
-    ;
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => DevicesConfigurationPage()
+        )
+    );
   }
 
   @override
@@ -94,7 +98,7 @@ class _ScanWidgetState extends State<ScanWidget> {
                 ),
                 _buildDeviceList(model.deviceList),
                 ElevatedButton(
-                  onPressed: onConfigButtonPressed,
+                  onPressed: allDevicesConnected ? onConfigButtonPressed : null,
                   child: Text(model.configButtonText),
                 ),
               ],

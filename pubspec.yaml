@@ -38,7 +38,7 @@ dependencies:
   mdsflutter: ^2.0.0
   permission_handler: ^11.1.0
   provider: ^6.0.4
-  body_part_selector: ^0.0.3
+  timer_count_down: ^2.2.2
 
 dev_dependencies:
   flutter_test:

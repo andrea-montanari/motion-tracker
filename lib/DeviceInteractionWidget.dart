@@ -77,7 +77,7 @@ class _DeviceInteractionWidgetState extends State<DeviceInteractionWidget> {
     return Card(
       child: ListTile(
         title: Text("Accelerometer"),
-        subtitle: Text(deviceModel.accelerometerData),
+        subtitle: Text(deviceModel.accelerometerData["x"].toString()),
         trailing: ElevatedButton(
           child: Text(deviceModel.accelerometerSubscribed
               ? "Unsubscribe"

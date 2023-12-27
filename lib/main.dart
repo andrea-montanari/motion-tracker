@@ -9,6 +9,7 @@ void main() {
       ChangeNotifierProvider(
         create: (context) => AppModel(),
         child: MaterialApp(
+          theme: ThemeData(useMaterial3: true),
           home: ScanWidget(),
         ),
       )
