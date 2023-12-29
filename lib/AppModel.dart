@@ -6,7 +6,7 @@ import 'package:multi_sensor_collector/Device.dart';
 import 'package:mdsflutter/Mds.dart';
 import 'package:multi_sensor_collector/DeviceConnectionStatus.dart';
 
-import 'DeviceModel.dart';
+import 'DeviceListModel.dart';
 
 class AppModel extends ChangeNotifier {
   final int _DEVICES_TO_CONNECT_NUM = 7;

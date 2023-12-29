@@ -3,6 +3,7 @@ import 'package:multi_sensor_collector/Utils/BodyPositions.dart';
 import 'package:provider/provider.dart';
 import 'package:timer_count_down/timer_count_down.dart';
 import 'AppModel.dart';
+import 'DeviceListModel.dart';
 import 'DeviceModel.dart';
 
 class DevicesConfigurationPage extends StatefulWidget {
