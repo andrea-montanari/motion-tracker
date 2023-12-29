@@ -26,8 +26,8 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
     deviceListModel = DeviceListModel();
     _callbackSuccess = Map();
     DeviceModel deviceModel;
-    if (model.configuredDeviceList.length == model.DEVICES_TO_CONNECT_NUM) {
-      deviceListModel.devices.addAll(model.configuredDeviceList);
+    if (model.configuredDeviceList.devices.length == model.DEVICES_TO_CONNECT_NUM) {
+      deviceListModel.addAllDevices(model.configuredDeviceList.devices);
       _callbackSuccess = {
         for (var value in BodyPositions.values) value: true
       };
@@ -189,8 +189,11 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
       return;
     }
     List<DeviceModel>? devicesSortedByMovement = await devicesSortedByMovementFuture;
+    print("Movement detected");
     context.mounted ? Navigator.pop(context) : null;
-    deviceListModel.devices = devicesSortedByMovement!;
+    // deviceListModel.addAllDevices(devicesSortedByMovement!);
+    print("Devices sorted b movement: ${devicesSortedByMovement!.length}");
+    print("deviceListModel length: ${deviceListModel.devices.length}");
 
     // Show the device that registered the most movement and make the user chose if it's the correct one
     for (final device in deviceListModel.devices) {
@@ -214,13 +217,12 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
       }
     }
 
-
     // If every other position has been configured, configure chest position by exclusion and complete configuration
     print("deviceListModel.devices.where((element) => element.bodyPosition != null).length : ${deviceListModel.devices.where((element) => element.bodyPosition != null).length}");
     print("deviceListModel.devices.length: ${deviceListModel.devices.length}");
     if (deviceListModel.devices.where((element) => element.bodyPosition != null).length == deviceListModel.devices.length - 1) {
       deviceListModel.devices.where((element) => element.bodyPosition == null).first.bodyPosition = BodyPositions.chest;
-      model.configuredDeviceList = deviceListModel.devices;
+      model.configuredDeviceList = deviceListModel;
       print("Configuration complete");
       setState(() {
         _callbackSuccess[BodyPositions.chest] = true;
@@ -240,7 +242,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
       _callbackSuccess = {
         for (var value in BodyPositions.values) value: false
       };
-      model.configuredDeviceList.clear();
+      model.clearConfiguredDevices();
     }
   }
 

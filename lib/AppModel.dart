@@ -13,7 +13,7 @@ class AppModel extends ChangeNotifier {
   int get DEVICES_TO_CONNECT_NUM => _DEVICES_TO_CONNECT_NUM;
   final Set<Device> _deviceList = Set();
   final Set<Device> _connectedDeviceList = Set();
-  Set<DeviceModel> _configuredDeviceList = Set();
+  DeviceListModel _configuredDeviceList = DeviceListModel();
   bool _isScanning = false;
   void Function(Device)? _onDeviceMdsConnectedCb;
   void Function(Device)? _onDeviceDisonnectedCb;
@@ -22,17 +22,22 @@ class AppModel extends ChangeNotifier {
       UnmodifiableListView(_deviceList);
   UnmodifiableListView<Device> get connectedDeviceList =>
       UnmodifiableListView(_connectedDeviceList);
-  UnmodifiableListView<DeviceModel> get configuredDeviceList =>
-      UnmodifiableListView(_configuredDeviceList);
-  void set configuredDeviceList (Iterable<DeviceModel> configuredDevices) => {
-    _configuredDeviceList = Set(),
-    _configuredDeviceList.addAll(configuredDevices),
+  DeviceListModel get configuredDeviceList => _configuredDeviceList;
+  void set configuredDeviceList (DeviceListModel configuredDevices) => {
+    _configuredDeviceList = configuredDevices,
+    notifyListeners(),
+  };
+  void clearConfiguredDevices () => {
+    _configuredDeviceList.devices.clear(),
+    notifyListeners(),
   };
 
   bool get isScanning => _isScanning;
 
   String get scanButtonText => _isScanning ? "Stop scansione" : "Avvia scansione";
   String get configButtonText => "Configura sensori";
+  String get recordingButtonText => "Avvia registrazione";
+  String get stopRecordingButtonText => "Ferma registrazione";
 
   void onDeviceMdsConnected(void Function(Device) cb) {
     _onDeviceMdsConnectedCb = cb;

@@ -15,6 +15,7 @@ class ScanWidget extends StatefulWidget {
 class _ScanWidgetState extends State<ScanWidget> {
   late AppModel model;
   bool allDevicesConnected = false;
+  bool recording = false;
 
   @override
   void initState() {
@@ -81,6 +82,14 @@ class _ScanWidgetState extends State<ScanWidget> {
     );
   }
 
+  void onRecordButtonPressed() {
+    recording ? model.configuredDeviceList.unsubscribeAllDevicesToIMU9() :
+                model.configuredDeviceList.subscribeAllDevicesToIMU9();
+    setState(() {
+      recording = !recording;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,6 +110,11 @@ class _ScanWidgetState extends State<ScanWidget> {
                   onPressed: allDevicesConnected ? onConfigButtonPressed : null,
                   child: Text(model.configButtonText),
                 ),
+                ElevatedButton(
+                  onPressed: model.configuredDeviceList.devices.length == model.DEVICES_TO_CONNECT_NUM  &&
+                             model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM ? onRecordButtonPressed : null,
+                  child: recording ? Text(model.stopRecordingButtonText) : Text(model.recordingButtonText),
+                )
               ],
             );
           },

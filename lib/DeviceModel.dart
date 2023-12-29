@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:mdsflutter/Mds.dart';
@@ -63,10 +64,13 @@ class DeviceModel extends ChangeNotifier {
     super.dispose();
   }
 
+
+  Stopwatch stopwatch = Stopwatch();
   void subscribeToAccelerometer() {
+    stopwatch = Stopwatch()..start();
     _accelerometerData = Map();
     _accSubscription = MdsAsync.subscribe(
-        Mds.createSubscriptionUri(_serial!, "/Meas/Acc/13"), "{}")
+        Mds.createSubscriptionUri(_serial!, "/Meas/Acc/104"), "{}")
         .handleError((error) => {
       debugPrint("Error on subscribeToAccelerometer: " + error.toString())
     })
@@ -84,6 +88,8 @@ class DeviceModel extends ChangeNotifier {
     _accelerometerData["x"] = acc["x"].toDouble();
     _accelerometerData["y"] = acc["y"].toDouble();
     _accelerometerData["z"] = acc["z"].toDouble();
+    print("Elapsed: ${stopwatch.elapsedMilliseconds}");
+    log("Acc data device $serial, timestamp: ${body["Timestamp"]}");
     notifyListeners();
   }
 
@@ -132,11 +138,12 @@ class DeviceModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void subscribeToIMU9({String rate = '13'}) {
+  void subscribeToIMU9({String rate = '104'}) {
     print("Subscribe to IMU 9");
     _IMU9Data = Map();
+    print("Subscribing to IMU9. Rate: $rate");
     _IMU9Subscription = MdsAsync.subscribe(
-        Mds.createSubscriptionUri(_serial!, "/Meas/IMU9/" + rate), "{}")
+        Mds.createSubscriptionUri(_serial!, "/Meas/IMU9/104"), "{}")
         .handleError((error) {
       print("Error: " + error.toString());
     })
@@ -157,6 +164,10 @@ class DeviceModel extends ChangeNotifier {
     dynamic gyro = gyroArray.last;
     dynamic magn = magnArray.last;
     _IMU9Data["Timestamp"] = body["Timestamp"].toString();
+    print("Timestamp: ${_IMU9Data["Timestamp"]}");
+    for (var probe in body["ArrayAcc"]) {
+      print("Probe: $probe");
+    }
     _IMU9Data["Acc"] = "x: " +
         acc["x"].toStringAsFixed(2) +
         "\ny: " +
@@ -175,16 +186,7 @@ class DeviceModel extends ChangeNotifier {
         magn["y"].toStringAsFixed(2) +
         "\nz: " +
         magn["z"].toStringAsFixed(2);
-    print("Acc x: ${acc['x']}. Type of acc['x']: ${acc['x'].runtimeType}");
-    runningStatX.push(magn["x"]);
-    runningStatY.push(magn["y"]);
-    runningStatZ.push(magn["z"]);
-    print("STDs:\nX: ${runningStatX.standardDeviation()} - Y: ${runningStatY
-        .standardDeviation()} - Z: ${runningStatZ.standardDeviation()}");
-    print("--- Max STDs: ${runningStatX.maxStd()} - Y: ${runningStatY
-        .maxStd()} - Z: ${runningStatZ.maxStd()}");
-    print("IMU9Data: \n$IMU9Data");
-    notifyListeners();
+    // notifyListeners();
   }
 
   void unsubscribeFromIMU9() {
@@ -247,9 +249,11 @@ class DeviceModel extends ChangeNotifier {
 }
 
 class DeviceListModel extends ChangeNotifier {
-  List<DeviceModel> devices = [];
+  List<DeviceModel> _devices = [];
   static const int MAXIMUM_RUNNING_TIME_FOR_MOVEMENT_CHECK = 10000;
   static const int INITIAL_DELAY_FOR_MOVEMENT_CHECK = 2000;
+
+  List<DeviceModel> get devices => _devices;
 
   void addDevice(DeviceModel deviceToAdd) {
     devices.add(deviceToAdd);
@@ -259,6 +263,29 @@ class DeviceListModel extends ChangeNotifier {
   void removeDevice(DeviceModel deviceToRemove) {
     devices.remove(deviceToRemove);
     notifyListeners();
+  }
+
+  void removeAllDevices() {
+    devices.clear();
+  }
+
+  void addAllDevices(Iterable<DeviceModel> devicesToAdd) {
+    removeAllDevices();
+    devices.addAll(devicesToAdd);
+    notifyListeners();
+  }
+
+  subscribeAllDevicesToIMU9() {
+    for (final device in devices) {
+      device.subscribeToIMU9();
+      break;
+    }
+  }
+
+  unsubscribeAllDevicesToIMU9() {
+    for (final device in devices) {
+      device.unsubscribeFromIMU9();
+    }
   }
 
   Future<void> subscribeAllDevicesToAccelerometerCheckForMovement() async {
