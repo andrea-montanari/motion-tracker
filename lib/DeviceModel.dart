@@ -1,14 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
+import 'package:csv/csv.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mdsflutter/Mds.dart';
 import 'package:multi_sensor_collector/Utils/BodyPositions.dart';
 import 'package:multi_sensor_collector/Utils/RunningStat.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class DeviceModel extends ChangeNotifier {
   static const double MOVEMENT_THRESHOLD = 4.0;
+  int sampleRate = 26;
 
   String? _serial;
   String? _name;
@@ -24,24 +29,30 @@ class DeviceModel extends ChangeNotifier {
 
   bool get accelerometerSubscribed => _accSubscription != null;
 
-  StreamSubscription? _IMU9Subscription;
-  Map<String, String> _IMU9Data = Map();
+  StreamSubscription? _imu9Subscription;
+  Map<String, String> _imu9Data = Map();
   RunningStat runningStatX = RunningStat();
   RunningStat runningStatY = RunningStat();
   RunningStat runningStatZ = RunningStat();
   double stdSum = 0.0;
+  List<String> csvHeaderImu9 = ["Timestamp","AccX","AccY","AccZ","GyroX","GyroY","GyroZ","MagnX","MagnY","MagnZ"];
+  List<List<String>> csvDataImu9 = [];
+  late String csvDirectoryImu9;
 
   BodyPositions? bodyPosition;
 
-  Map<String, String> get IMU9Data => _IMU9Data;
+  Map<String, String> get imu9Data => _imu9Data;
 
-  bool get IMU9Subscribed => _IMU9Subscription != null;
+  bool get imu9Subscribed => _imu9Subscription != null;
 
   List<RunningStat> get runningStats =>
       [runningStatX, runningStatY, runningStatZ];
 
   StreamSubscription? _hrSubscription;
   String _hrData = "";
+  List<String> csvHeaderHr = ["Timestamp","bpm"];
+  List<List<String>> csvDataHr = [];
+  late String csvDirectoryHr;
 
   String get hrData => _hrData;
 
@@ -138,19 +149,22 @@ class DeviceModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void subscribeToIMU9({String rate = '104'}) {
+  void subscribeToIMU9() {
     print("Subscribe to IMU 9");
-    _IMU9Data = Map();
-    print("Subscribing to IMU9. Rate: $rate");
-    _IMU9Subscription = MdsAsync.subscribe(
-        Mds.createSubscriptionUri(_serial!, "/Meas/IMU9/104"), "{}")
+    _imu9Data = Map();
+    print("Subscribing to IMU9. Rate: $sampleRate");
+
+    csvDataImu9 = [];
+    csvDataImu9.add(csvHeaderImu9);
+
+    _imu9Subscription = MdsAsync.subscribe(
+        Mds.createSubscriptionUri(_serial!, "/Meas/IMU9/" + sampleRate.toString()), "{}")
         .handleError((error) {
       print("Error: " + error.toString());
     })
         .listen((event) {
       _onNewIMU9Data(event);
-    })
-    ;
+    });
 
     notifyListeners();
   }
@@ -160,45 +174,82 @@ class DeviceModel extends ChangeNotifier {
     List<dynamic> accArray = body["ArrayAcc"];
     List<dynamic> gyroArray = body["ArrayGyro"];
     List<dynamic> magnArray = body["ArrayMagn"];
-    dynamic acc = accArray.last;
-    dynamic gyro = gyroArray.last;
-    dynamic magn = magnArray.last;
-    _IMU9Data["Timestamp"] = body["Timestamp"].toString();
-    print("Timestamp: ${_IMU9Data["Timestamp"]}");
-    for (var probe in body["ArrayAcc"]) {
-      print("Probe: $probe");
+
+    var sampleInterval = 1000 / sampleRate;
+
+    for (var probeIdx = 0; probeIdx < accArray.length; probeIdx++) {
+
+      // Interpolate timestamp within update
+      int timestamp = body["Timestamp"] + (sampleInterval * probeIdx).round();
+
+      List<String> csvRow = [
+        timestamp.toString(),
+        accArray[probeIdx]["x"].toStringAsFixed(2),
+        accArray[probeIdx]["y"].toStringAsFixed(2),
+        accArray[probeIdx]["z"].toStringAsFixed(2),
+        gyroArray[probeIdx]["x"].toStringAsFixed(2),
+        gyroArray[probeIdx]["y"].toStringAsFixed(2),
+        gyroArray[probeIdx]["z"].toStringAsFixed(2),
+        magnArray[probeIdx]["x"].toStringAsFixed(2),
+        magnArray[probeIdx]["y"].toStringAsFixed(2),
+        magnArray[probeIdx]["z"].toStringAsFixed(2),
+      ];
+      csvDataImu9.add(csvRow);
     }
-    _IMU9Data["Acc"] = "x: " +
-        acc["x"].toStringAsFixed(2) +
-        "\ny: " +
-        acc["y"].toStringAsFixed(2) +
-        "\nz: " +
-        acc["z"].toStringAsFixed(2);
-    _IMU9Data["Gyro"] = "x: " +
-        gyro["x"].toStringAsFixed(2) +
-        "\ny: " +
-        gyro["y"].toStringAsFixed(2) +
-        "\nz: " +
-        gyro["z"].toStringAsFixed(2);
-    _IMU9Data["Magn"] = "x: " +
-        magn["x"].toStringAsFixed(2) +
-        "\ny: " +
-        magn["y"].toStringAsFixed(2) +
-        "\nz: " +
-        magn["z"].toStringAsFixed(2);
-    // notifyListeners();
+
   }
 
-  void unsubscribeFromIMU9() {
-    if (_IMU9Subscription != null) {
-      _IMU9Subscription!.cancel();
+  void unsubscribeFromIMU9(String currentDate) async {
+    if (_imu9Subscription != null) {
+      _imu9Subscription!.cancel();
     }
-    _IMU9Subscription = null;
+    _imu9Subscription = null;
+
+    // Write data to csv file
+    print("Writing data to csv file");
+    csvDirectoryImu9 = await createExternalDirectory();
+    print("Directory: $csvDirectoryImu9");
+    String csvData = const ListToCsvConverter().convert(csvDataImu9);
+    print("Csv data: $csvData");
+    String path = "$csvDirectoryImu9/${currentDate}_IMU9Data-$serial.csv";
+    final File file = await File(path).create(recursive: true);
+    var status = await Permission.storage.status;
+    if (!status.isGranted) {
+      await Permission.storage.request();
+    }
+    await file.writeAsString(csvData);
+    print("File written");
+
     notifyListeners();
+  }
+
+  Future<String> createExternalDirectory() async {
+    Directory? dir;
+    if (Platform.isAndroid) {
+      dir = Directory('/storage/emulated/0/Movesense'); // Change this path accordingly
+    } else if (Platform.isIOS) {
+      dir = await getApplicationSupportDirectory(); // For iOS
+    }
+    if (dir != null) {
+      if ((await dir.exists())) {
+        print("Dir exists, path: ${dir.path}");
+        return dir.path;
+      } else {
+        print("Dir doesn't exist, creating...");
+        dir.create();
+        return dir.path;
+      }
+    } else {
+      throw Exception('Platform not supported');
+    }
   }
 
   void subscribeToHr() {
     _hrData = "";
+
+    csvDataHr = [];
+    csvDataHr.add(csvHeaderHr);
+
     _hrSubscription = MdsAsync.subscribe(
         Mds.createSubscriptionUri(_serial!, "/Meas/HR"), "{}")
         .listen((event) {
@@ -209,7 +260,7 @@ class DeviceModel extends ChangeNotifier {
 
   void _onNewHrData(dynamic hrData) {
     Map<String, dynamic> body = hrData["Body"];
-    double hr = body["average"];
+    double hr = body["average"].toDouble();
     _hrData = hr.toStringAsFixed(1) + " bpm";
     notifyListeners();
   }

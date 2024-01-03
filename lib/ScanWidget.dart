@@ -36,6 +36,8 @@ class _ScanWidgetState extends State<ScanWidget> {
       Permission.bluetooth,
       Permission.bluetoothScan,
       Permission.bluetoothConnect,
+      Permission.storage,
+      Permission.manageExternalStorage,
     ].request();
     debugPrint("PermissionStatus: $statuses");
   }
@@ -83,8 +85,8 @@ class _ScanWidgetState extends State<ScanWidget> {
   }
 
   void onRecordButtonPressed() {
-    recording ? model.configuredDeviceList.unsubscribeAllDevicesToIMU9() :
-                model.configuredDeviceList.subscribeAllDevicesToIMU9();
+    recording ? model.configuredDeviceList.stopRecording() :
+                model.configuredDeviceList.startRecording();
     setState(() {
       recording = !recording;
     });
@@ -98,24 +100,28 @@ class _ScanWidgetState extends State<ScanWidget> {
         ),
         body: Consumer<AppModel>(
           builder: (context, model, child) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                ElevatedButton(
-                  onPressed: onScanButtonPressed,
-                  child: Text(model.scanButtonText),
-                ),
-                _buildDeviceList(model.deviceList),
-                ElevatedButton(
-                  onPressed: allDevicesConnected ? onConfigButtonPressed : null,
-                  child: Text(model.configButtonText),
-                ),
-                ElevatedButton(
-                  onPressed: model.configuredDeviceList.devices.length == model.DEVICES_TO_CONNECT_NUM  &&
-                             model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM ? onRecordButtonPressed : null,
-                  child: recording ? Text(model.stopRecordingButtonText) : Text(model.recordingButtonText),
-                )
-              ],
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(0,0,0,50),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  ElevatedButton(
+                    onPressed: onScanButtonPressed,
+                    child: Text(model.scanButtonText),
+                  ),
+                  _buildDeviceList(model.deviceList),
+                  ElevatedButton(
+                    onPressed: allDevicesConnected ? onConfigButtonPressed : null,
+                    child: Text(model.configButtonText),
+                  ),
+                  ElevatedButton(
+                    onPressed: model.configuredDeviceList.devices.length == model.DEVICES_TO_CONNECT_NUM  &&
+                               model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM ? onRecordButtonPressed : null,
+                    child: recording ? Text(model.stopRecordingButtonText) : Text(model.recordingButtonText),
+
+                  )
+                ],
+              ),
             );
           },
         ));

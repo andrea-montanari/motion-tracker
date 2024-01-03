@@ -6,6 +6,8 @@ import 'package:multi_sensor_collector/Device.dart';
 
 import 'package:multi_sensor_collector/AppModel.dart';
 
+// TODO: remove this class
+
 class DeviceInteractionWidget extends StatefulWidget {
   final Device device;
   const DeviceInteractionWidget(this.device);
