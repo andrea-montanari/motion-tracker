@@ -30,13 +30,13 @@ class DeviceListModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  startRecording() {
+  startRecording(var rate) {
     for (final (idx, device) in devices.indexed) {
       if (idx == devices.length-1) {
         device.subscribeToHr();
         break;
       }
-      device.subscribeToIMU9();
+      device.subscribeToIMU9(rate);
     }
   }
 

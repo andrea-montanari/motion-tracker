@@ -8,7 +8,7 @@ enum BodyPositions {
   chest,
 }
 
-extension MyColorExtension on BodyPositions {
+extension BodyPositionsExtension on BodyPositions {
   String get name {
     switch (this) {
       case BodyPositions.leftWrist:

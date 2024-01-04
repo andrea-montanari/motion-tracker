@@ -172,6 +172,7 @@ class DeviceModel extends ChangeNotifier {
   }
 
   void subscribeToIMU9(var rate) {
+    sampleRate = rate;
     print("Subscribe to IMU 9");
     _imu9Data = Map();
     print("Subscribing to IMU9. Rate: $sampleRate");

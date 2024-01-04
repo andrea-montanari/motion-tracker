@@ -4,8 +4,11 @@ import 'package:multi_sensor_collector/Device.dart';
 import 'package:multi_sensor_collector/DeviceConnectionStatus.dart';
 import 'package:multi_sensor_collector/AppModel.dart';
 import 'package:multi_sensor_collector/DevicesConfigurationPage.dart';
+import 'package:multi_sensor_collector/Utils/InfoResponse.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+
+import 'DeviceModel.dart';
 
 class ScanWidget extends StatefulWidget {
   @override
@@ -17,14 +20,23 @@ class _ScanWidgetState extends State<ScanWidget> {
   bool allDevicesConnected = false;
   bool recording = false;
 
+  List sampleRates = [];
+  late var dropdownValue;
+
   @override
   void initState() {
     super.initState();
     initPlatformState();
     model = Provider.of<AppModel>(context, listen: false);
-    model.onDeviceMdsConnected((device) => {
+    InfoResponse imuInfo;
+    model.onDeviceMdsConnected((device) async => {
       print("Deviced connected: ${model.connectedDeviceList.length} Devices to connect num: ${model.DEVICES_TO_CONNECT_NUM}"),
       model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM ? allDevicesConnected = true : allDevicesConnected = false,
+      if (sampleRates.isEmpty) {
+        imuInfo = await model.connectedDeviceList.first.getImuInfo(),
+        print("Sample rates: ${imuInfo.sampleRates}"),
+        updateDropdownElements(imuInfo.sampleRates),
+      }
     });
     model.onDeviceMdsDisconnected((device) => model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM ? allDevicesConnected = true : allDevicesConnected = false,);
   }
@@ -42,14 +54,21 @@ class _ScanWidgetState extends State<ScanWidget> {
     debugPrint("PermissionStatus: $statuses");
   }
 
+  void updateDropdownElements(List sampleRates) {
+    setState(() {
+      this.sampleRates = sampleRates;
+      dropdownValue = this.sampleRates.first;
+    });
+  }
+
   Widget _buildDeviceItem(BuildContext context, int index) {
     return Card(
       child: ListTile(
         title: Text(model.deviceList[index].name!),
-        subtitle: Text(model.deviceList[index].address!),
-        trailing: Text(model.deviceList[index].connectionStatus.statusName),
+        subtitle: Text(model.deviceList[index].device.address!),
+        trailing: Text(model.deviceList[index].device.connectionStatus.statusName),
         onTap: () => {
-          if (model.deviceList[index].connectionStatus == DeviceConnectionStatus.NOT_CONNECTED) {
+          if (model.deviceList[index].device.connectionStatus == DeviceConnectionStatus.NOT_CONNECTED) {
             model.connectToDevice(model.deviceList[index])
           } else {
             model.disconnectFromDevice(model.deviceList[index])
@@ -59,7 +78,7 @@ class _ScanWidgetState extends State<ScanWidget> {
     );
   }
 
-  Widget _buildDeviceList(List<Device> deviceList) {
+  Widget _buildDeviceList(List<DeviceModel> deviceList) {
     return new Expanded(
         child: new ListView.builder(
             itemCount: model.deviceList.length,
@@ -84,9 +103,9 @@ class _ScanWidgetState extends State<ScanWidget> {
     );
   }
 
-  void onRecordButtonPressed() {
+  void onRecordButtonPressed(var rate) {
     recording ? model.configuredDeviceList.stopRecording() :
-                model.configuredDeviceList.startRecording();
+    model.configuredDeviceList.startRecording(rate);
     setState(() {
       recording = !recording;
     });
@@ -114,12 +133,53 @@ class _ScanWidgetState extends State<ScanWidget> {
                     onPressed: allDevicesConnected ? onConfigButtonPressed : null,
                     child: Text(model.configButtonText),
                   ),
-                  ElevatedButton(
-                    onPressed: model.configuredDeviceList.devices.length == model.DEVICES_TO_CONNECT_NUM  &&
-                               model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM ? onRecordButtonPressed : null,
-                    child: recording ? Text(model.stopRecordingButtonText) : Text(model.recordingButtonText),
+                  Stack(
+                    children: [
 
-                  )
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: () => {
+                            if (model.configuredDeviceList.devices.length == model.DEVICES_TO_CONNECT_NUM &&
+                            model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM)
+                            {
+                              onRecordButtonPressed(dropdownValue)
+                            } else {
+                              null
+                            }
+                          },
+                          child: recording ? Text(model.stopRecordingButtonText) : Text(model.recordingButtonText),
+                        ),
+                      ),
+                      if (sampleRates.isNotEmpty) Column(
+                        children:  [
+                          Text(model.dropdownRateSelHint),
+                          DropdownButton<String>(
+                            alignment: Alignment.center,
+                            // hint: Text(model.dropdownRateSelHint),
+                            value: dropdownValue.toString(),
+                            icon: const Icon(Icons.arrow_downward),
+                            elevation: 16,
+                            underline: Container(
+                              color: Colors.black12,
+                              height: 2,
+                            ),
+                            onChanged: (String? value) {
+                              // This is called when the user selects an item.
+                              setState(() {
+                                dropdownValue = value!;
+                              });
+                            },
+                            items: sampleRates.map<DropdownMenuItem<String>>((var value) {
+                              return DropdownMenuItem(
+                                value: value.toString(),
+                                child: Text(value.toString()),
+                              );
+                            }).toList(),
+                          ),
+                        ]
+                      ),
+                    ],
+                  ),
                 ],
               ),
             );
