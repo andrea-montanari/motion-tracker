@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:multi_sensor_collector/Utils/BodyPositions.dart';
 import 'package:provider/provider.dart';
 import 'package:timer_count_down/timer_count_down.dart';
+import 'package:collection/collection.dart';
 import 'AppModel.dart';
 import 'DeviceListModel.dart';
 import 'DeviceModel.dart';
@@ -221,15 +222,23 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
     // If every other position has been configured, configure chest position by exclusion and complete configuration
     print("deviceListModel.devices.where((element) => element.bodyPosition != null).length : ${deviceListModel.devices.where((element) => element.bodyPosition != null).length}");
     print("deviceListModel.devices.length: ${deviceListModel.devices.length}");
-    if (deviceListModel.devices.where((element) => element.bodyPosition != null).length == deviceListModel.devices.length - 1) {
-      deviceListModel.devices.where((element) => element.bodyPosition == null).first.bodyPosition = BodyPositions.chest;
+    print("Body part: ${bodyPart.name}");
+    BodyPositions? chestPosition = BodyPositions.values.firstWhereOrNull((element) => element.name == "petto");
+    if (chestPosition != null && deviceListModel.devices.where((element) => element.bodyPosition != null).length == deviceListModel.devices.length - 1) {
+      deviceListModel.devices.where((element) => element.bodyPosition == null).first.bodyPosition = chestPosition;
       model.configuredDeviceList = deviceListModel;
       print("Configuration complete");
       setState(() {
-        _callbackSuccess[BodyPositions.chest] = true;
+        _callbackSuccess[chestPosition] = true;
         _configurationCompleted.value = true;
       });
     }
+
+    if (deviceListModel.devices.where((element) => element.bodyPosition != null).length == deviceListModel.devices.length) {
+      model.configuredDeviceList = deviceListModel;
+      _configurationCompleted.value = true;
+    }
+
   }
 
   Future<void> _onResetButtonPressed() async {
@@ -289,7 +298,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
                               child: ListTile(
                                 title: Text(bodyPart.nameUpperCase),
                                 tileColor: _callbackSuccess[bodyPart]! ? Colors.green : null,
-                                enabled: !_callbackSuccess[bodyPart]! && !(bodyPart == BodyPositions.chest),
+                                enabled: !_callbackSuccess[bodyPart]! && !(bodyPart.name == "petto"),
                                 onTap: () => _onButtonPressed(bodyPart),
                               ),
                             ),

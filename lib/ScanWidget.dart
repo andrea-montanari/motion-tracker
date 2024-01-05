@@ -29,11 +29,15 @@ class _ScanWidgetState extends State<ScanWidget> {
     initPlatformState();
     model = Provider.of<AppModel>(context, listen: false);
     InfoResponse imuInfo;
+    DeviceModel deviceModel;
     model.onDeviceMdsConnected((device) async => {
       print("Deviced connected: ${model.connectedDeviceList.length} Devices to connect num: ${model.DEVICES_TO_CONNECT_NUM}"),
       model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM ? allDevicesConnected = true : allDevicesConnected = false,
+
+      // Get available sample rates on first connection
       if (sampleRates.isEmpty) {
-        imuInfo = await model.connectedDeviceList.first.getImuInfo(),
+        deviceModel = DeviceModel(device.name, device.serial),
+        imuInfo = await deviceModel.getImuInfo(),
         print("Sample rates: ${imuInfo.sampleRates}"),
         updateDropdownElements(imuInfo.sampleRates),
       }
@@ -65,10 +69,10 @@ class _ScanWidgetState extends State<ScanWidget> {
     return Card(
       child: ListTile(
         title: Text(model.deviceList[index].name!),
-        subtitle: Text(model.deviceList[index].device.address!),
-        trailing: Text(model.deviceList[index].device.connectionStatus.statusName),
+        subtitle: Text(model.deviceList[index].address!),
+        trailing: Text(model.deviceList[index].connectionStatus.statusName),
         onTap: () => {
-          if (model.deviceList[index].device.connectionStatus == DeviceConnectionStatus.NOT_CONNECTED) {
+          if (model.deviceList[index].connectionStatus == DeviceConnectionStatus.NOT_CONNECTED) {
             model.connectToDevice(model.deviceList[index])
           } else {
             model.disconnectFromDevice(model.deviceList[index])
@@ -78,7 +82,8 @@ class _ScanWidgetState extends State<ScanWidget> {
     );
   }
 
-  Widget _buildDeviceList(List<DeviceModel> deviceList) {
+  Widget _buildDeviceList(List<Device> deviceList) {
+    print("Device list length: ${deviceList.length}.\nDeviceList: $deviceList");
     return new Expanded(
         child: new ListView.builder(
             itemCount: model.deviceList.length,
@@ -115,7 +120,7 @@ class _ScanWidgetState extends State<ScanWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text('Mds Flutter Example'),
+          title: const Text('Multi Sensor Collector'),
         ),
         body: Consumer<AppModel>(
           builder: (context, model, child) {
@@ -138,15 +143,11 @@ class _ScanWidgetState extends State<ScanWidget> {
 
                       Center(
                         child: ElevatedButton(
-                          onPressed: () => {
-                            if (model.configuredDeviceList.devices.length == model.DEVICES_TO_CONNECT_NUM &&
+                          onPressed:
+                            (model.configuredDeviceList.devices.length == model.DEVICES_TO_CONNECT_NUM &&
                             model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM)
-                            {
-                              onRecordButtonPressed(dropdownValue)
-                            } else {
-                              null
-                            }
-                          },
+                                ? () => onRecordButtonPressed(dropdownValue)
+                                : null,
                           child: recording ? Text(model.stopRecordingButtonText) : Text(model.recordingButtonText),
                         ),
                       ),

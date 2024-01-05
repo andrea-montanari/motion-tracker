@@ -4,23 +4,24 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mdsflutter/Mds.dart';
 import 'package:multi_sensor_collector/DeviceConnectionStatus.dart';
+import 'package:multi_sensor_collector/Utils/BodyPositions.dart';
 
+import 'Device.dart';
 import 'DeviceListModel.dart';
-import 'DeviceModel.dart';
 
 class AppModel extends ChangeNotifier {
-  final int _DEVICES_TO_CONNECT_NUM = 7;
+  final int _DEVICES_TO_CONNECT_NUM = BodyPositions.values.length;
   int get DEVICES_TO_CONNECT_NUM => _DEVICES_TO_CONNECT_NUM;
-  final Set<DeviceModel> _deviceList = Set();
-  final Set<DeviceModel> _connectedDeviceList = Set();
+  final Set<Device> _deviceList = Set();
+  final Set<Device> _connectedDeviceList = Set();
   DeviceListModel _configuredDeviceList = DeviceListModel();
   bool _isScanning = false;
-  void Function(DeviceModel)? _onDeviceMdsConnectedCb;
-  void Function(DeviceModel)? _onDeviceDisonnectedCb;
+  void Function(Device)? _onDeviceMdsConnectedCb;
+  void Function(Device)? _onDeviceDisonnectedCb;
 
-  UnmodifiableListView<DeviceModel> get deviceList =>
+  UnmodifiableListView<Device> get deviceList =>
       UnmodifiableListView(_deviceList);
-  UnmodifiableListView<DeviceModel> get connectedDeviceList =>
+  UnmodifiableListView<Device> get connectedDeviceList =>
       UnmodifiableListView(_connectedDeviceList);
   DeviceListModel get configuredDeviceList => _configuredDeviceList;
   void set configuredDeviceList (DeviceListModel configuredDevices) => {
@@ -40,18 +41,18 @@ class AppModel extends ChangeNotifier {
   String get stopRecordingButtonText => "Ferma registrazione";
   String get dropdownRateSelHint => "Data rate";
 
-  void onDeviceMdsConnected(void Function(DeviceModel) cb) {
+  void onDeviceMdsConnected(void Function(Device) cb) {
     _onDeviceMdsConnectedCb = cb;
   }
 
-  void onDeviceMdsDisconnected(void Function(DeviceModel) cb) {
+  void onDeviceMdsDisconnected(void Function(Device) cb) {
     _onDeviceDisonnectedCb = cb;
   }
 
   void startScan() {
-    _deviceList.forEach((deviceModel) {
-      if (deviceModel.device.connectionStatus == DeviceConnectionStatus.CONNECTED) {
-        disconnectFromDevice(deviceModel);
+    _deviceList.forEach((device) {
+      if (device.connectionStatus == DeviceConnectionStatus.CONNECTED) {
+        disconnectFromDevice(device);
       }
     });
 
@@ -60,7 +61,7 @@ class AppModel extends ChangeNotifier {
 
     try {
       Mds.startScan((name, address) {
-        DeviceModel device = DeviceModel(name, address);
+        Device device = Device(name, address);
         if (!_deviceList.contains(device)) {
           _deviceList.add(device);
           notifyListeners();
@@ -80,30 +81,30 @@ class AppModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void connectToDevice(DeviceModel deviceModel) {
-    deviceModel.device.onConnecting();
+  void connectToDevice(Device device) {
+    device.onConnecting();
     notifyListeners();
     Mds.connect(
-        deviceModel.device.address!,
-            (serial) => _onDeviceMdsConnected(deviceModel.device.address, serial),
-            () => _onDeviceDisconnected(deviceModel.device.address),
-            () => _onDeviceConnectError(deviceModel.device.address));
+        device.address!,
+            (serial) => _onDeviceMdsConnected(device.address, serial),
+            () => _onDeviceDisconnected(device.address),
+            () => _onDeviceConnectError(device.address));
   }
 
-  void disconnectFromDevice(DeviceModel deviceModel) {
-    Mds.disconnect(deviceModel.device.address!);
-    _onDeviceDisconnected(deviceModel.device.address);
+  void disconnectFromDevice(Device device) {
+    Mds.disconnect(device.address!);
+    _onDeviceDisconnected(device.address);
   }
 
   void _onDeviceMdsConnected(String? address, String serial) {
-    DeviceModel foundDevice =
-    _deviceList.firstWhere((deviceModel) => deviceModel.device.address == address);
+    Device foundDevice =
+    _deviceList.firstWhere((device) => device.address == address);
 
     if (!_connectedDeviceList.contains(foundDevice)) {
       _connectedDeviceList.add(foundDevice);
     }
 
-    foundDevice.device.onMdsConnected(serial);
+    foundDevice.onMdsConnected(serial);
     notifyListeners();
     if (_onDeviceMdsConnectedCb != null) {
       _onDeviceMdsConnectedCb!.call(foundDevice);
@@ -111,14 +112,14 @@ class AppModel extends ChangeNotifier {
   }
 
   void _onDeviceDisconnected(String? address) {
-    DeviceModel foundDevice =
-    _deviceList.firstWhere((deviceModel) => deviceModel.device.address == address);
+    Device foundDevice =
+    _deviceList.firstWhere((device) => device.address == address);
 
     if (_connectedDeviceList.contains(foundDevice)) {
       _connectedDeviceList.remove(foundDevice);
     }
 
-    foundDevice.device.onDisconnected();
+    foundDevice.onDisconnected();
     notifyListeners();
     if (_onDeviceDisonnectedCb != null) {
       _onDeviceDisonnectedCb!.call(foundDevice);

@@ -7,21 +7,22 @@ import 'package:csv/csv.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mdsflutter/Mds.dart';
 import 'package:multi_sensor_collector/Utils/BodyPositions.dart';
-import 'package:multi_sensor_collector/Utils/InfoResponse.dart';
 import 'package:multi_sensor_collector/Utils/RunningStat.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'Device.dart';
+import 'Utils/InfoResponse.dart';
 
 class DeviceModel extends ChangeNotifier {
   static const double MOVEMENT_THRESHOLD = 4.0;
   int sampleRate = 26;
 
-  late Device device;
+  String? _serial;
+  String? _name;
 
-  String? get name => device.name;
-  String? get serial => device.serial;
+  String? get name => _name;
+
+  String? get serial => _serial;
 
   StreamSubscription? _accSubscription;
   Map<String, double> _accelerometerData = Map();
@@ -67,9 +68,7 @@ class DeviceModel extends ChangeNotifier {
 
   String get temperature => _temperature;
 
-  DeviceModel(var name, var serial) {
-    device = Device(name, serial);
-  }
+  DeviceModel(this._name, this._serial);
 
   @override
   void dispose() {
@@ -84,7 +83,7 @@ class DeviceModel extends ChangeNotifier {
     stopwatch = Stopwatch()..start();
     _accelerometerData = Map();
     _accSubscription = MdsAsync.subscribe(
-        Mds.createSubscriptionUri(device.serial!, "/Meas/Acc/104"), "{}")
+        Mds.createSubscriptionUri(_serial!, "/Meas/Acc/104"), "{}")
         .handleError((error) => {
       debugPrint("Error on subscribeToAccelerometer: " + error.toString())
     })
@@ -116,7 +115,7 @@ class DeviceModel extends ChangeNotifier {
     stdSum = 0.0;
 
     _accSubscription = MdsAsync.subscribe(
-        Mds.createSubscriptionUri(device.serial!, "/Meas/Acc/13"), "{}")
+        Mds.createSubscriptionUri(_serial!, "/Meas/Acc/13"), "{}")
         .handleError((error) => {
       debugPrint("Error on subscribeToAccelerometerCheckForMovement: $error")
     })
@@ -155,24 +154,23 @@ class DeviceModel extends ChangeNotifier {
   Future<InfoResponse> getImuInfo() {
     InfoResponse imuInfoResponse;
     Completer<InfoResponse> completer = Completer<InfoResponse>();
-    Mds.get(Mds.createRequestUri(device.serial!, "/Meas/IMU/Info"),
+    Mds.get(Mds.createRequestUri(_serial!, "/Meas/IMU/Info"),
         "{}",
             (data, statusCode) {
-              /* onSuccess */
-              print("IMU info: $data");
-              imuInfoResponse = InfoResponse(data);
-              completer.complete(imuInfoResponse);
-            },
+          /* onSuccess */
+          print("IMU info: $data");
+          imuInfoResponse = InfoResponse(data);
+          completer.complete(imuInfoResponse);
+        },
             (error, statusCode) {
-              /* onError */
-              completer.complete();
-            }
+          /* onError */
+          completer.complete();
+        }
     );
     return completer.future;
   }
 
   void subscribeToIMU9(var rate) {
-    sampleRate = rate;
     print("Subscribe to IMU 9");
     _imu9Data = Map();
     print("Subscribing to IMU9. Rate: $sampleRate");
@@ -181,15 +179,13 @@ class DeviceModel extends ChangeNotifier {
     csvDataImu9.add(csvHeaderImu9);
 
     _imu9Subscription = MdsAsync.subscribe(
-        Mds.createSubscriptionUri(device.serial!, "/Meas/IMU9/$rate"), "{}")
+        Mds.createSubscriptionUri(_serial!, "/Meas/IMU9/$rate"), "{}")
         .handleError((error) {
       print("Error: " + error.toString());
     })
         .listen((event) {
       _onNewIMU9Data(event);
     });
-
-    notifyListeners();
   }
 
   void _onNewIMU9Data(dynamic imuData) {
@@ -274,7 +270,7 @@ class DeviceModel extends ChangeNotifier {
     csvDataHr.add(csvHeaderHr);
 
     _hrSubscription = MdsAsync.subscribe(
-        Mds.createSubscriptionUri(device.serial!, "/Meas/HR"), "{}")
+        Mds.createSubscriptionUri(_serial!, "/Meas/HR"), "{}")
         .listen((event) {
       _onNewHrData(event);
     });
@@ -300,7 +296,7 @@ class DeviceModel extends ChangeNotifier {
     debugPrint("switchLed()");
     Map<String, bool> contract = new Map<String, bool>();
     contract["isOn"] = !_ledStatus;
-    MdsAsync.put(Mds.createRequestUri(device.serial!, "/Component/Led"),
+    MdsAsync.put(Mds.createRequestUri(_serial!, "/Component/Led"),
         jsonEncode(contract))
         .then((value) {
       debugPrint("switchLed then: $value");
@@ -311,7 +307,7 @@ class DeviceModel extends ChangeNotifier {
 
   void getTemperature() async {
     debugPrint("getTemperature()");
-    MdsAsync.get(Mds.createRequestUri(device.serial!, "/Meas/Temp"), "{}")
+    MdsAsync.get(Mds.createRequestUri(_serial!, "/Meas/Temp"), "{}")
         .then((value) {
       debugPrint("getTemperature value: $value");
       double kelvin = value["Measurement"];

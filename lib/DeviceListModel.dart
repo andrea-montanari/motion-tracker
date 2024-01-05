@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import 'DeviceModel.dart';
+import 'Utils/BodyPositions.dart';
 
 class DeviceListModel extends ChangeNotifier {
   List<DeviceModel> _devices = [];
@@ -32,7 +33,8 @@ class DeviceListModel extends ChangeNotifier {
 
   startRecording(var rate) {
     for (final (idx, device) in devices.indexed) {
-      if (idx == devices.length-1) {
+      // If chest is defined in the BodPositions, get also Heart rate data
+      if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "petto")) {
         device.subscribeToHr();
         break;
       }
@@ -45,7 +47,7 @@ class DeviceListModel extends ChangeNotifier {
     final DateFormat dateFormat = DateFormat("yyyy-MM-dd_HH-mm-ss");
     final String nowFormatted = dateFormat.format(now);
     for (final (idx, device) in devices.indexed) {
-      if (idx == devices.length-1) {
+      if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "petto")) {
         device.unsubscribeFromHr();
         break;
       }

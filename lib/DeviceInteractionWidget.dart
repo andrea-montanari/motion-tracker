@@ -9,7 +9,7 @@ import 'package:multi_sensor_collector/AppModel.dart';
 // TODO: remove this class
 
 class DeviceInteractionWidget extends StatefulWidget {
-  final DeviceModel device;
+  final Device device;
   const DeviceInteractionWidget(this.device);
 
   @override
@@ -52,7 +52,7 @@ class _DeviceInteractionWidgetState extends State<DeviceInteractionWidget> {
 
   @override
   Widget build(BuildContext context) {
-    DeviceModel device = widget.device;
+    Device device = widget.device;
     return ChangeNotifierProvider(
       create: (context) => DeviceModel(device.name, device.serial),
       child: Consumer<DeviceModel>(
