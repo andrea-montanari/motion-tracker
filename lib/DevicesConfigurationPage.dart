@@ -298,7 +298,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
                               child: ListTile(
                                 title: Text(bodyPart.nameUpperCase),
                                 tileColor: _callbackSuccess[bodyPart]! ? Colors.green : null,
-                                enabled: !_callbackSuccess[bodyPart]! && !(bodyPart.name == "petto"),
+                                enabled: !_callbackSuccess[bodyPart]! && !(bodyPart == BodyPositions.chest),
                                 onTap: () => _onButtonPressed(bodyPart),
                               ),
                             ),

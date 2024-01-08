@@ -31,30 +31,6 @@ class DeviceListModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  startRecording(var rate) {
-    for (final (idx, device) in devices.indexed) {
-      // If chest is defined in the BodPositions, get also Heart rate data
-      if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "petto")) {
-        device.subscribeToHr();
-        break;
-      }
-      device.subscribeToIMU9(rate);
-    }
-  }
-
-  stopRecording() {
-    final DateTime now = DateTime.now();
-    final DateFormat dateFormat = DateFormat("yyyy-MM-dd_HH-mm-ss");
-    final String nowFormatted = dateFormat.format(now);
-    for (final (idx, device) in devices.indexed) {
-      if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "petto")) {
-        device.unsubscribeFromHr();
-        break;
-      }
-      device.unsubscribeFromIMU9(nowFormatted);
-    }
-  }
-
   Future<void> subscribeAllDevicesToAccelerometerCheckForMovement() async {
     Completer completer = Completer();
     for (final device in devices) {
@@ -88,5 +64,43 @@ class DeviceListModel extends ChangeNotifier {
     notifyListeners();
     return devices;
     // });
+  }
+
+  Future<bool> synchronizeDevices() async {
+    List<bool> setTimeSucceeded = [];
+    for (final device in devices) {
+      // Set time three times to account for metadata exchange in the first few communications with the sensors
+      setTimeSucceeded.add(await device.setTime());
+      setTimeSucceeded.add(await device.setTime());
+      setTimeSucceeded.add(await device.setTime());
+    }
+    if (setTimeSucceeded.every((element) => element == true)) {
+      return true;
+    }
+    return false;
+  }
+
+  startRecording(var rate) {
+    for (final (idx, device) in devices.indexed) {
+      // If chest is defined in the BodyPositions, get also Heart rate data
+      if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "petto")) {
+        device.subscribeToHr();
+        break;
+      }
+      device.subscribeToIMU9(rate);
+    }
+  }
+
+  stopRecording() {
+    final DateTime now = DateTime.now();
+    final DateFormat dateFormat = DateFormat("yyyy-MM-dd_HH-mm-ss");
+    final String nowFormatted = dateFormat.format(now);
+    for (final (idx, device) in devices.indexed) {
+      if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "petto")) {
+        device.unsubscribeFromHr();
+        break;
+      }
+      device.unsubscribeFromIMU9(nowFormatted);
+    }
   }
 }

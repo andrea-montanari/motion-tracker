@@ -108,12 +108,58 @@ class _ScanWidgetState extends State<ScanWidget> {
     );
   }
 
-  void onRecordButtonPressed(var rate) {
-    recording ? model.configuredDeviceList.stopRecording() :
-    model.configuredDeviceList.startRecording(rate);
-    setState(() {
-      recording = !recording;
-    });
+  Future<bool?> _showSynchronizationDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return const AlertDialog(
+          title: Text('Sincronizzazione dispositivi...'),
+        );
+      },
+    );
+  }
+
+  Future<bool?> _showSynchronizationFailedDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Sincronizzazione dispositivi fallita, ritentare.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Ok'),
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> onRecordButtonPressed(var rate) async {
+    if (recording) {
+      model.configuredDeviceList.stopRecording();
+      setState(() {
+        recording = !recording;
+      });
+    } else {
+      _showSynchronizationDialog();
+      bool synchronizationSucceeded = await model.configuredDeviceList.synchronizeDevices();
+      Navigator.pop(context);
+      if (!synchronizationSucceeded) {
+        await _showSynchronizationFailedDialog();
+        return;
+      }
+      model.configuredDeviceList.startRecording(rate);
+      setState(() {
+        recording = !recording;
+      });
+    }
+    return;
   }
 
   @override

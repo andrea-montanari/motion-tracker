@@ -11,6 +11,7 @@ import 'package:multi_sensor_collector/Utils/RunningStat.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'AppModel.dart';
 import 'Utils/InfoResponse.dart';
 
 class DeviceModel extends ChangeNotifier {
@@ -37,7 +38,7 @@ class DeviceModel extends ChangeNotifier {
   RunningStat runningStatY = RunningStat();
   RunningStat runningStatZ = RunningStat();
   double stdSum = 0.0;
-  List<String> csvHeaderImu9 = ["Timestamp","AccX","AccY","AccZ","GyroX","GyroY","GyroZ","MagnX","MagnY","MagnZ"];
+  List<String> csvHeaderImu9 = ["Timestamp","AccX","AccY","AccZ","GyroX","GyroY","GyroZ","MagnX","MagnY","MagnZ", "UTC_start-end", "relativeTime_start-end"];
   List<List<String>> csvDataImu9 = [];
   late String csvDirectoryImu9;
 
@@ -68,6 +69,12 @@ class DeviceModel extends ChangeNotifier {
 
   String get temperature => _temperature;
 
+  Stopwatch stopwatch = Stopwatch();
+  int previousTimestamp = 0;
+
+  Map timeDetailedStart = Map();
+  Map timeDetailedEnd = Map();
+
   DeviceModel(this._name, this._serial);
 
   @override
@@ -78,9 +85,47 @@ class DeviceModel extends ChangeNotifier {
   }
 
 
-  Stopwatch stopwatch = Stopwatch();
-  void subscribeToAccelerometer() {
-    stopwatch = Stopwatch()..start();
+  Future<bool> setTime() {
+    Completer<bool> completer = Completer<bool>();
+    Mds.put(Mds.createRequestUri(_serial!, "/Time"),
+        "{\"value\":${DateTime.now().microsecondsSinceEpoch}}",
+            (data, statusCode) {
+          /* onSuccess */
+          print("Time set for sensor $_serial. Data: $data");
+          completer.complete(true);
+        },
+            (error, statusCode) {
+          /* onError */
+          print("Error on time set for sensor $_serial");
+          completer.complete(false);
+        }
+    );
+    return completer.future;
+  }
+
+  Future<Map> getTimeDetailed() {
+    Map timeDetailed = {};
+    Completer<Map> completer = Completer<Map>();
+    Mds.get(Mds.createRequestUri(_serial!, "/Time/Detailed"),
+        "{}",
+            (data, statusCode) {
+          /* onSuccess */
+          print("Time detailed for sensor $_serial. Data: $data");
+          Map timeDetailedData = jsonDecode(data);
+          timeDetailed["utc"] = timeDetailedData["Content"]["utcTime"];
+          timeDetailed["relativeTime"] = timeDetailedData["Content"]["relativeTime"];
+          completer.complete(timeDetailed);
+        },
+            (error, statusCode) {
+          /* onError */
+          print("Error on get time detailed for sensor $_serial");
+          completer.complete(null);
+        }
+    );
+    return completer.future;
+  }
+
+  subscribeToAccelerometer() {
     _accelerometerData = Map();
     _accSubscription = MdsAsync.subscribe(
         Mds.createSubscriptionUri(_serial!, "/Meas/Acc/104"), "{}")
@@ -101,7 +146,6 @@ class DeviceModel extends ChangeNotifier {
     _accelerometerData["x"] = acc["x"].toDouble();
     _accelerometerData["y"] = acc["y"].toDouble();
     _accelerometerData["z"] = acc["z"].toDouble();
-    print("Elapsed: ${stopwatch.elapsedMilliseconds}");
     log("Acc data device $serial, timestamp: ${body["Timestamp"]}");
     notifyListeners();
   }
@@ -170,13 +214,15 @@ class DeviceModel extends ChangeNotifier {
     return completer.future;
   }
 
-  void subscribeToIMU9(var rate) {
+  Future<void> subscribeToIMU9(var rate) async {
     print("Subscribe to IMU 9");
     _imu9Data = Map();
     print("Subscribing to IMU9. Rate: $sampleRate");
 
     csvDataImu9 = [];
     csvDataImu9.add(csvHeaderImu9);
+
+    timeDetailedStart = await getTimeDetailed();
 
     _imu9Subscription = MdsAsync.subscribe(
         Mds.createSubscriptionUri(_serial!, "/Meas/IMU9/$rate"), "{}")
@@ -199,7 +245,8 @@ class DeviceModel extends ChangeNotifier {
     for (var probeIdx = 0; probeIdx < accArray.length; probeIdx++) {
 
       // Interpolate timestamp within update
-      int timestamp = body["Timestamp"] + (sampleInterval * probeIdx).round();
+      int timestamp = body["Timestamp"] +
+          (sampleInterval * probeIdx).round();
 
       List<String> csvRow = [
         timestamp.toString(),
@@ -224,6 +271,16 @@ class DeviceModel extends ChangeNotifier {
     }
     _imu9Subscription = null;
 
+    timeDetailedEnd = await getTimeDetailed();
+
+    // Add start and end time to csv data
+    csvDataImu9[1].add(timeDetailedStart["utc"].toString());
+    csvDataImu9[1].add(timeDetailedStart["relativeTime"].toString());
+    csvDataImu9[2].add(timeDetailedEnd["utc"].toString());
+    csvDataImu9[2].add(timeDetailedEnd["relativeTime"].toString());
+    print("-- first row csv: ${csvDataImu9[1]}");
+    print("-- second row csv: ${csvDataImu9[2]}");
+
     // Write data to csv file
     print("Writing data to csv file");
     csvDirectoryImu9 = await createExternalDirectory();
@@ -245,7 +302,7 @@ class DeviceModel extends ChangeNotifier {
   Future<String> createExternalDirectory() async {
     Directory? dir;
     if (Platform.isAndroid) {
-      dir = Directory('/storage/emulated/0/Movesense'); // Change this path accordingly
+      dir = Directory('/storage/emulated/0/Movesense'); // For Android
     } else if (Platform.isIOS) {
       dir = await getApplicationSupportDirectory(); // For iOS
     }
@@ -263,14 +320,30 @@ class DeviceModel extends ChangeNotifier {
     }
   }
 
+  void getEcgConfig() {
+    InfoResponse imuInfoResponse;
+    Mds.get(Mds.createRequestUri(_serial!, "/Meas/ECG/Config"),
+        "{}",
+            (data, statusCode) {
+          /* onSuccess */
+          print("ECG Config: $data");
+          imuInfoResponse = InfoResponse(data);
+        },
+            (error, statusCode) {
+          /* onError */
+        }
+    );
+  }
+
   void subscribeToHr() {
     _hrData = "";
 
     csvDataHr = [];
     csvDataHr.add(csvHeaderHr);
 
+    stopwatch.start();
     _hrSubscription = MdsAsync.subscribe(
-        Mds.createSubscriptionUri(_serial!, "/Meas/HR"), "{}")
+      Mds.createSubscriptionUri(_serial!, "/Meas/HR"), "{}",)
         .listen((event) {
       _onNewHrData(event);
     });
@@ -281,6 +354,9 @@ class DeviceModel extends ChangeNotifier {
     Map<String, dynamic> body = hrData["Body"];
     double hr = body["average"].toDouble();
     _hrData = hr.toStringAsFixed(1) + " bpm";
+    print("--- HR:\n\tTimestamp: ${body["Timestamp"]}\n\tData: ${body["average"]}");
+    print('_onNewHrData() executed in ${stopwatch.elapsedMilliseconds - previousTimestamp}');
+    previousTimestamp = stopwatch.elapsedMilliseconds;
     notifyListeners();
   }
 
@@ -289,6 +365,7 @@ class DeviceModel extends ChangeNotifier {
       _hrSubscription!.cancel();
     }
     _hrSubscription = null;
+    stopwatch.stop();
     notifyListeners();
   }
 
