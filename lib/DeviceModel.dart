@@ -74,6 +74,7 @@ class DeviceModel extends ChangeNotifier {
 
   Map timeDetailedStart = Map();
   Map timeDetailedEnd = Map();
+  int localTimeOffset = DateTime.now().toLocal().timeZoneOffset.inMicroseconds;
 
   DeviceModel(this._name, this._serial);
 
@@ -88,7 +89,7 @@ class DeviceModel extends ChangeNotifier {
   Future<bool> setTime() {
     Completer<bool> completer = Completer<bool>();
     Mds.put(Mds.createRequestUri(_serial!, "/Time"),
-        "{\"value\":${DateTime.now().microsecondsSinceEpoch}}",
+        "{\"value\":${DateTime.now().microsecondsSinceEpoch+localTimeOffset}}",
             (data, statusCode) {
           /* onSuccess */
           print("Time set for sensor $_serial. Data: $data");
