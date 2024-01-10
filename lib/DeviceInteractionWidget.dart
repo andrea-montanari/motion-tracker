@@ -38,7 +38,7 @@ class _DeviceInteractionWidgetState extends State<DeviceInteractionWidget> {
 
   void _onHrButtonPressed(DeviceModel deviceModel) {
     if (deviceModel.hrSubscribed) {
-      deviceModel.unsubscribeFromHr();
+      // deviceModel.unsubscribeFromHr();
     } else {
       deviceModel.subscribeToHr();
     }

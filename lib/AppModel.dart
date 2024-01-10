@@ -37,9 +37,10 @@ class AppModel extends ChangeNotifier {
 
   String get scanButtonText => _isScanning ? "Stop scansione" : "Avvia scansione";
   String get configButtonText => "Configura sensori";
-  String get recordingButtonText => "Avvia registrazione";
+  String get startRecordingButtonText => "Avvia registrazione";
   String get stopRecordingButtonText => "Ferma registrazione";
   String get dropdownRateSelHint => "Data rate";
+  String get hrDataText => "HR:";
 
   void onDeviceMdsConnected(void Function(Device) cb) {
     _onDeviceMdsConnectedCb = cb;

@@ -4,6 +4,7 @@ import 'package:multi_sensor_collector/Device.dart';
 import 'package:multi_sensor_collector/DeviceConnectionStatus.dart';
 import 'package:multi_sensor_collector/AppModel.dart';
 import 'package:multi_sensor_collector/DevicesConfigurationPage.dart';
+import 'package:multi_sensor_collector/Utils/BodyPositions.dart';
 import 'package:multi_sensor_collector/Utils/InfoResponse.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -22,6 +23,9 @@ class _ScanWidgetState extends State<ScanWidget> {
 
   List sampleRates = [];
   late var dropdownValue;
+
+  bool hrActive = false;
+  String hrData = "";
 
   @override
   void initState() {
@@ -58,10 +62,33 @@ class _ScanWidgetState extends State<ScanWidget> {
     debugPrint("PermissionStatus: $statuses");
   }
 
+  void catchHrDataCallbacks() {
+    if (model.configuredDeviceList.devices.isNotEmpty) {
+      model.configuredDeviceList.devices
+          .where((element) => element.bodyPosition == BodyPositions.chest)
+          .first
+          .onHrStart(() => setState(() {
+        hrActive = true;
+      }));
+      model.configuredDeviceList.devices
+          .where((element) => element.bodyPosition == BodyPositions.chest)
+          .first
+          .onHrStop(() => setState(() {
+        hrActive = false;
+      }));
+      model.configuredDeviceList.devices
+          .where((element) => element.bodyPosition == BodyPositions.chest)
+          .first
+          .onHrDataReceived((device) { setState(() {
+        hrData = device.hrData;
+      }); });
+    }
+  }
+
   void updateDropdownElements(List sampleRates) {
     setState(() {
       this.sampleRates = sampleRates;
-      dropdownValue = this.sampleRates.first;
+      dropdownValue = this.sampleRates[1];  // Defaults to 26Hz
     });
   }
 
@@ -105,7 +132,7 @@ class _ScanWidgetState extends State<ScanWidget> {
         MaterialPageRoute(
             builder: (context) => DevicesConfigurationPage()
         )
-    );
+    ).then((_) => catchHrDataCallbacks());
   }
 
   Future<bool?> _showSynchronizationDialog() async {
@@ -194,15 +221,15 @@ class _ScanWidgetState extends State<ScanWidget> {
                             model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM)
                                 ? () => onRecordButtonPressed(dropdownValue)
                                 : null,
-                          child: recording ? Text(model.stopRecordingButtonText) : Text(model.recordingButtonText),
+                          child: recording ? Text(model.stopRecordingButtonText) : Text(model.startRecordingButtonText),
                         ),
                       ),
+
                       if (sampleRates.isNotEmpty) Column(
                         children:  [
                           Text(model.dropdownRateSelHint),
                           DropdownButton<String>(
                             alignment: Alignment.center,
-                            // hint: Text(model.dropdownRateSelHint),
                             value: dropdownValue.toString(),
                             icon: const Icon(Icons.arrow_downward),
                             elevation: 16,
@@ -226,6 +253,15 @@ class _ScanWidgetState extends State<ScanWidget> {
                         ]
                       ),
                     ],
+                  ),
+                  if (hrActive)
+                    // &&
+                  // model.configuredDeviceList.devices.where((element) => element.bodyPosition == BodyPositions.chest).first.isActive)
+                    Column(
+                      children: [
+                        Text(model.hrDataText),
+                        Text(hrData)
+                      ],
                   ),
                 ],
               ),

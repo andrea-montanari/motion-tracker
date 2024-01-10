@@ -59,6 +59,9 @@ class DeviceModel extends ChangeNotifier {
   String get hrData => _hrData;
 
   bool get hrSubscribed => _hrSubscription != null;
+  Function()? _onHrStart;
+  Function()? _onHrStop;
+  Function(DeviceModel device)? _onHrDataReceived;
 
   bool _ledStatus = false;
 
@@ -74,6 +77,16 @@ class DeviceModel extends ChangeNotifier {
   Map timeDetailedStart = Map();
   Map timeDetailedEnd = Map();
   int localTimeOffset = DateTime.now().toLocal().timeZoneOffset.inMicroseconds;
+
+  void onHrStart(void Function() cb) {
+    _onHrStart = cb;
+  }
+  void onHrStop(void Function() cb) {
+    _onHrStop = cb;
+  }
+  void onHrDataReceived(void Function(DeviceModel) cb) {
+    _onHrDataReceived = cb;
+  }
 
   DeviceModel(this._name, this._serial);
 
@@ -337,6 +350,10 @@ class DeviceModel extends ChangeNotifier {
   }
 
   void subscribeToHr() {
+    if (_onHrStart != null) {
+      _onHrStart!.call();
+      print("_onHrStart");
+    }
     _hrData = "";
 
     csvDataHr = [];
@@ -366,10 +383,17 @@ class DeviceModel extends ChangeNotifier {
     print("--- HR:\n\tTimestamp: ${body["Timestamp"]}\n\tData: ${body["average"]}");
     print('_onNewHrData() executed in ${stopwatch.elapsedMilliseconds - previousTimestamp}');
     previousTimestamp = stopwatch.elapsedMilliseconds;
+    if (_onHrDataReceived != null) {
+      _onHrDataReceived!.call(this);
+    }
     notifyListeners();
   }
 
   Future<void> unsubscribeFromHr(String currentDate) async {
+    if (_onHrStop != null) {
+      _onHrStop!.call();
+    }
+
     if (_hrSubscription != null) {
       _hrSubscription!.cancel();
     }
