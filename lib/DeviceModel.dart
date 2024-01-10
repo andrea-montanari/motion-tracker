@@ -11,7 +11,6 @@ import 'package:multi_sensor_collector/Utils/RunningStat.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'AppModel.dart';
 import 'Utils/InfoResponse.dart';
 
 class DeviceModel extends ChangeNotifier {
@@ -38,7 +37,7 @@ class DeviceModel extends ChangeNotifier {
   RunningStat runningStatY = RunningStat();
   RunningStat runningStatZ = RunningStat();
   double stdSum = 0.0;
-  List<String> csvHeaderImu9 = ["Timestamp","AccX","AccY","AccZ","GyroX","GyroY","GyroZ","MagnX","MagnY","MagnZ", "UTC_start-end", "relativeTime_start-end"];
+  List<String> csvHeaderImu9 = ["Timestamp","AccX","AccY","AccZ","GyroX","GyroY","GyroZ","MagnX","MagnY","MagnZ", "UTC_start-end", "relativeTime_start-end", "position"];
   List<List<String>> csvDataImu9 = [];
   late String csvDirectoryImu9;
 
@@ -53,7 +52,7 @@ class DeviceModel extends ChangeNotifier {
 
   StreamSubscription? _hrSubscription;
   String _hrData = "";
-  List<String> csvHeaderHr = ["Timestamp","bpm"];
+  List<String> csvHeaderHr = ["Timestamp","hr"];
   List<List<String>> csvDataHr = [];
   late String csvDirectoryHr;
 
@@ -274,9 +273,10 @@ class DeviceModel extends ChangeNotifier {
 
     timeDetailedEnd = await getTimeDetailed();
 
-    // Add start and end time to csv data
+    // Add start time, end time and body position to csv data
     csvDataImu9[1].add(timeDetailedStart["utc"].toString());
     csvDataImu9[1].add(timeDetailedStart["relativeTime"].toString());
+    csvDataImu9[1].add(bodyPosition!.name);
     csvDataImu9[2].add(timeDetailedEnd["utc"].toString());
     csvDataImu9[2].add(timeDetailedEnd["relativeTime"].toString());
     print("-- first row csv: ${csvDataImu9[1]}");
@@ -354,19 +354,42 @@ class DeviceModel extends ChangeNotifier {
   void _onNewHrData(dynamic hrData) {
     Map<String, dynamic> body = hrData["Body"];
     double hr = body["average"].toDouble();
-    _hrData = hr.toStringAsFixed(1) + " bpm";
+    _hrData = hr.toStringAsFixed(1);
+    int timestamp = DateTime.now().microsecondsSinceEpoch+localTimeOffset;
+
+    List<String> csvRow = [
+      timestamp.toString(),
+      _hrData,
+    ];
+    csvDataHr.add(csvRow);
+
     print("--- HR:\n\tTimestamp: ${body["Timestamp"]}\n\tData: ${body["average"]}");
     print('_onNewHrData() executed in ${stopwatch.elapsedMilliseconds - previousTimestamp}');
     previousTimestamp = stopwatch.elapsedMilliseconds;
     notifyListeners();
   }
 
-  void unsubscribeFromHr() {
+  Future<void> unsubscribeFromHr(String currentDate) async {
     if (_hrSubscription != null) {
       _hrSubscription!.cancel();
     }
     _hrSubscription = null;
     stopwatch.stop();
+
+    // Write data to csv file
+    print("Writing hr data to csv file");
+    csvDirectoryHr = await createExternalDirectory();
+    print("Directory Hr: $csvDirectoryHr");
+    String csvData = const ListToCsvConverter().convert(csvDataHr);
+    print("Csv data hr: $csvData");
+    String path = "$csvDirectoryHr/${currentDate}_HrData-$serial.csv";
+    final File file = await File(path).create(recursive: true);
+    var status = await Permission.storage.status;
+    if (!status.isGranted) {
+      await Permission.storage.request();
+    }
+    await file.writeAsString(csvData);
+
     notifyListeners();
   }
 

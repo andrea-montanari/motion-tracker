@@ -97,7 +97,7 @@ class DeviceListModel extends ChangeNotifier {
     final String nowFormatted = dateFormat.format(now);
     for (final (idx, device) in devices.indexed) {
       if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "petto")) {
-        device.unsubscribeFromHr();
+        device.unsubscribeFromHr(nowFormatted);
         break;
       }
       device.unsubscribeFromIMU9(nowFormatted);
