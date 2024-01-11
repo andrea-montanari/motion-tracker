@@ -37,7 +37,7 @@ class DeviceModel extends ChangeNotifier {
   RunningStat runningStatY = RunningStat();
   RunningStat runningStatZ = RunningStat();
   double stdSum = 0.0;
-  List<String> csvHeaderImu9 = ["Timestamp","AccX","AccY","AccZ","GyroX","GyroY","GyroZ","MagnX","MagnY","MagnZ", "UTC_start-end", "relativeTime_start-end", "position"];
+  List<String> csvHeaderImu9 = ["Timestamp","AccX","AccY","AccZ","GyroX","GyroY","GyroZ","MagnX","MagnY","MagnZ", "position", "UTC_start-end", "relativeTime_start-end"];
   List<List<String>> csvDataImu9 = [];
   late String csvDirectoryImu9;
 
@@ -52,7 +52,7 @@ class DeviceModel extends ChangeNotifier {
 
   StreamSubscription? _hrSubscription;
   String _hrData = "";
-  List<String> csvHeaderHr = ["Timestamp","hr"];
+  List<String> csvHeaderHr = ["Timestamp","hr", "position"];
   List<List<String>> csvDataHr = [];
   late String csvDirectoryHr;
 
@@ -272,6 +272,7 @@ class DeviceModel extends ChangeNotifier {
         magnArray[probeIdx]["x"].toStringAsFixed(2),
         magnArray[probeIdx]["y"].toStringAsFixed(2),
         magnArray[probeIdx]["z"].toStringAsFixed(2),
+        bodyPosition!.nameEng,
       ];
       csvDataImu9.add(csvRow);
     }
@@ -289,7 +290,6 @@ class DeviceModel extends ChangeNotifier {
     // Add start time, end time and body position to csv data
     csvDataImu9[1].add(timeDetailedStart["utc"].toString());
     csvDataImu9[1].add(timeDetailedStart["relativeTime"].toString());
-    csvDataImu9[1].add(bodyPosition!.name);
     csvDataImu9[2].add(timeDetailedEnd["utc"].toString());
     csvDataImu9[2].add(timeDetailedEnd["relativeTime"].toString());
     print("-- first row csv: ${csvDataImu9[1]}");
@@ -377,6 +377,7 @@ class DeviceModel extends ChangeNotifier {
     List<String> csvRow = [
       timestamp.toString(),
       _hrData,
+      bodyPosition!.nameEng,
     ];
     csvDataHr.add(csvRow);
 

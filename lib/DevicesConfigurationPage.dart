@@ -93,7 +93,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
                   alignment: Alignment.center,
                   child:
                   Countdown(
-                    seconds: 0,   // TODO: set this to 2/3
+                    seconds: 2,
                     build: (BuildContext context, double time) => Text(
                       (time.toInt()+1).toString(),
                       style: TextStyle(

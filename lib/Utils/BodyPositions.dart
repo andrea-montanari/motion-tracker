@@ -28,6 +28,25 @@ extension BodyPositionsExtension on BodyPositions {
     }
   }
 
+  String get nameEng {
+    switch (this) {
+      case BodyPositions.leftWrist:
+        return 'left wrist';
+      case BodyPositions.rightWrist:
+        return 'right wrist';
+      case BodyPositions.leftPocket:
+        return 'left pocket';
+      case BodyPositions.rightPocket:
+        return 'right pocket';
+      case BodyPositions.leftAnkle:
+        return 'left ankle';
+      case BodyPositions.rightAnkle:
+        return 'right ankle';
+      case BodyPositions.chest:
+        return 'chest';
+    }
+  }
+
   String get nameUpperCase {
     switch (this) {
       case BodyPositions.leftWrist:
