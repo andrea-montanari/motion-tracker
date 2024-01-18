@@ -7,6 +7,7 @@ import 'package:csv/csv.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mdsflutter/Mds.dart';
 import 'package:multi_sensor_collector/Utils/BodyPositions.dart';
+import 'package:multi_sensor_collector/Utils/DataLoggerConfig.dart';
 import 'package:multi_sensor_collector/Utils/RunningStat.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -77,6 +78,8 @@ class DeviceModel extends ChangeNotifier {
   Map timeDetailedStart = Map();
   Map timeDetailedEnd = Map();
   int localTimeOffset = DateTime.now().toLocal().timeZoneOffset.inMicroseconds;
+
+  int? _currentLogId;
 
   void onHrStart(void Function() cb) {
     _onHrStart = cb;
@@ -240,7 +243,7 @@ class DeviceModel extends ChangeNotifier {
     _imu9Subscription = MdsAsync.subscribe(
         Mds.createSubscriptionUri(_serial!, "/Meas/IMU9/$rate"), "{}")
         .handleError((error) {
-      print("Error: " + error.toString());
+      print("Error: $error");
     })
         .listen((event) {
       _onNewIMU9Data(event);
@@ -442,4 +445,107 @@ class DeviceModel extends ChangeNotifier {
       notifyListeners();
     });
   }
+
+
+  // --------------------------- DataLogger ---------------------------
+
+  Future<void> configDataLogger(var rate) async {
+    Completer completer = Completer();
+    String config = DataLoggerConfig.getDataLoggerConfig("/Meas/IMU9/$sampleRate");
+    Mds.put(Mds.createRequestUri(_serial!, "/Mem/DataLogger/Config/"),
+        config,
+            (data, statusCode) {
+          /* onSuccess */
+          print("Result of datalogger configuration: $data");
+          completer.complete();
+        },
+            (error, statusCode) {
+          /* onError */
+              print("Error in configDataLogger: $error");
+              completer.complete();
+        }
+    );
+    return completer.future;
+  }
+
+  Future<void> _setLoggingState(var state) async {
+    Completer completer = Completer();
+    Mds.put(Mds.createRequestUri(_serial!, "/Mem/DataLogger/State/"),
+        "{\"newState\":$state}",  // 3 = start logging, 2 = stop logging
+            (data, statusCode) {
+          /* onSuccess */
+          print("Result of setLoggingState: $data");
+          completer.complete();
+        },
+            (error, statusCode) {
+          /* onError */
+          print("Error in setLoggingState: $error");
+          completer.complete();
+        }
+    );
+    return completer.future;
+  }
+
+  Future<void> startLogging() async {
+    await _setLoggingState(3);
+  }
+
+  Future<void> stopLogging() async {
+    await _setLoggingState(2);
+  }
+
+  Future<void> createNewLog() async {
+    Completer completer = Completer();
+    Mds.post(Mds.createRequestUri(_serial!, "/Mem/Logbook/Entries/"),
+        "{}",
+            (data, statusCode) {
+          /* onSuccess */
+          print("Result of createNewLog: $data");
+          Map newLogData = jsonDecode(data);
+          _currentLogId = newLogData["Content"];
+          completer.complete();
+        },
+            (error, statusCode) {
+          /* onError */
+          print("Error in createNewLog: $error");
+          completer.complete();
+        }
+    );
+    return completer.future;
+  }
+
+  void fetchLogEntry() {
+    print("Fetching log entry");
+    String fetchLogEntryUri = "suunto://MDS/Logbook/${_serial!}/ById/${_currentLogId!-1}/Data";
+    Mds.get(fetchLogEntryUri,
+        "{}",
+            (data, statusCode) {
+          /* onSuccess */
+          print("Result of fetchLogEntry: $data");
+        },
+            (error, statusCode) {
+          /* onError */
+          print("Error in fetchLogEntry: $error");
+        }
+    );
+  }
+
+  Future<void> eraseLogbook() async {
+    Completer completer = Completer();
+    Mds.del(Mds.createRequestUri(_serial!, "/Mem/Logbook/Entries/"),
+        "{}",
+            (data, statusCode) {
+          /* onSuccess */
+          print("Result of eraseLogbook: $data");
+          completer.complete();
+        },
+            (error, statusCode) {
+          /* onError */
+          print("Error in eraseLogbook: $error");
+          completer.complete();
+        }
+    );
+    return completer.future;
+  }
+
 }
