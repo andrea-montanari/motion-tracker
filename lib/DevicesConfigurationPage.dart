@@ -1,3 +1,4 @@
+import 'dart:core';
 import 'package:flutter/material.dart';
 import 'package:multi_sensor_collector/Utils/BodyPositions.dart';
 import 'package:provider/provider.dart';
@@ -21,10 +22,28 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
   late DeviceListModel deviceListModel;
   late AppModel model;
 
+  static const String movementDetected = "Movement detected";
+  static const String deviceSelection = "Is the device with the LED the one located on the POSITION_PLACEHOLDER?";
+  static const String yes = "Yes";
+  static const String no = "No";
+  static const String getReady = "Get ready for the configuration of the sensor in position POSITION_PLACEHOLDER";
+  static const String getInPosition = "Stand up with arms extended along the body and perform the movement at the end of the countdown";
+  static const String cancel = "Cancel";
+  static const String movementDetection = "Movement detection";
+  static const String liftLimb = "Lift your POSITION_PLACEHOLDER";
+  static const String confirmResetConf = "Do you confirm that you want to reset the configuration?";
+  static const String devicesConfiguration = "Devices configuration";
+  static const String devicesConfiguredCorrectly = "Devices configured correctly";
+  static const String resetConfiguration = "Reset configuration";
+
   @override
   void initState() {
     super.initState();
     model = Provider.of<AppModel>(context, listen: false);
+    initDevicesState();
+  }
+
+  void initDevicesState() {
     deviceListModel = DeviceListModel();
     _callbackSuccess = Map();
     DeviceModel deviceModel;
@@ -51,23 +70,23 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Movimento rilevato'),
+          title: const Text(movementDetected),
           content:  SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text('Il dispositivo con il led accesso è quello in posizione ${bodyPart.name}?'),
+                Text(deviceSelection.replaceAll("POSITION_PLACEHOLDER", bodyPart.name)),
               ],
             ),
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Sì'),
+              child: const Text(yes),
               onPressed: () {
                 Navigator.pop(context, true);
               },
             ),
             TextButton(
-              child: const Text('No'),
+              child: const Text(no),
               onPressed: () {
                 Navigator.pop(context, false);
               },
@@ -84,11 +103,11 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Prepararsi alla configurazione del sensore in posizione ${bodyPart.name}'),
+          title: Text(getReady.replaceAll("POSITION_PLACEHOLDER", bodyPart.name)),
           content:  SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                const Text('Posizionarsi in piedi e con le braccia distese lungo il corpo ed eseguire il movimento al termine del countdown'),
+                const Text(getInPosition),
                 Align(
                   alignment: Alignment.center,
                   child:
@@ -101,7 +120,6 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
                       ),),
                     interval: Duration(milliseconds: 1000),
                     onFinished: () {
-                      print('Timer is done!');
                       Navigator.pop(context, true);
                     },
                   ),
@@ -111,7 +129,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Annulla'),
+              child: const Text(cancel),
               onPressed: () {
                 Navigator.pop(context, false);
               },
@@ -128,17 +146,17 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Rilevazione del movimento'),
+          title: const Text(movementDetection),
           content:  SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text('Sollevare ${bodyPart.limb}'),
+                Text(liftLimb.replaceAll("POSITION_PLACEHOLDER", bodyPart.limb)),
               ],
             ),
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Annulla'),
+              child: const Text(cancel),
               onPressed: () {
                 Navigator.pop(context, false);
               },
@@ -155,16 +173,16 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Confermi di voler resettare la configurazione?'),
+          title: const Text(confirmResetConf),
           actions: <Widget>[
             TextButton(
-              child: const Text('Sì'),
+              child: const Text(yes),
               onPressed: () {
                 Navigator.pop(context, true);
               },
             ),
             TextButton(
-              child: const Text('No'),
+              child: const Text(no),
               onPressed: () {
                 Navigator.pop(context, false);
               },
@@ -176,7 +194,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
   }
 
 
-  Future<void> _onButtonPressed(BodyPositions bodyPart) async {
+  Future<void> _onPositionButtonPressed(BodyPositions bodyPart) async {
     bool? countDownDialogResult = await _showCountDownDialog(bodyPart);
     if (!countDownDialogResult!) {
       return;
@@ -223,7 +241,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
     print("deviceListModel.devices.where((element) => element.bodyPosition != null).length : ${deviceListModel.devices.where((element) => element.bodyPosition != null).length}");
     print("deviceListModel.devices.length: ${deviceListModel.devices.length}");
     print("Body part: ${bodyPart.name}");
-    BodyPositions? chestPosition = BodyPositions.values.firstWhereOrNull((element) => element.name == "petto");
+    BodyPositions? chestPosition = BodyPositions.values.firstWhereOrNull((element) => element.name == "chest");
     if (chestPosition != null && deviceListModel.devices.where((element) => element.bodyPosition != null).length == deviceListModel.devices.length - 1) {
       deviceListModel.devices.where((element) => element.bodyPosition == null).first.bodyPosition = chestPosition;
       model.configuredDeviceList = deviceListModel;
@@ -234,25 +252,25 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
       });
     }
 
-    if (deviceListModel.devices.where((element) => element.bodyPosition != null).length == deviceListModel.devices.length) {
-      model.configuredDeviceList = deviceListModel;
-      _configurationCompleted.value = true;
-    }
-
   }
 
   Future<void> _onResetButtonPressed() async {
     bool? confirmationDialogResult = await _showConfirmationDialog();
     if (confirmationDialogResult != null && confirmationDialogResult) {
-      DeviceModel deviceModel;
-      model.deviceList.forEach((device) => {
-        deviceModel = DeviceModel(device.name, device.serial),
-        deviceListModel.addDevice(deviceModel),
+      // deviceListModel = DeviceListModel();
+      // DeviceModel deviceModel;
+      // model.deviceList.forEach((device) => {
+      //   deviceModel = DeviceModel(device.name, device.serial),
+      //   deviceListModel.addDevice(deviceModel),
+      // });
+      // _callbackSuccess = {
+      //   for (var value in BodyPositions.values) value: false
+      // };
+      setState(() {
+        model.clearConfiguredDevices();
+        initDevicesState();
       });
-      _callbackSuccess = {
-        for (var value in BodyPositions.values) value: false
-      };
-      model.clearConfiguredDevices();
+
     }
   }
 
@@ -260,12 +278,14 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
   Widget build(BuildContext context) {
     // Listen to changes in the state variable inside the build method
     _configurationCompleted.addListener(() {
-      if (_configurationCompleted.value) {
+      print(" -- -- Configuration completed listener called");
+      if (_configurationCompleted.value == true) {
+        print(" -- -- Configuration completed true");
         // Show a snackbar when the state variable changes to true
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Dispositivi configurati correttamente'),
+              content: Text(devicesConfiguredCorrectly),
             ),
           );
         });
@@ -280,12 +300,12 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
             {
               return Scaffold(
                   appBar: AppBar(
-                    title: Text("Configurazione dispositivi"),
+                    title: Text(devicesConfiguration),
                     actions: [
                       IconButton(
                         icon: Icon(Icons.refresh),
                         onPressed: _callbackSuccess.values.where((element) => element == true).length > 0 ? _onResetButtonPressed : null,
-                        tooltip: "Reset configurazione",
+                        tooltip: resetConfiguration,
                       )
                     ],
                   ),
@@ -299,7 +319,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
                                 title: Text(bodyPart.nameUpperCase),
                                 tileColor: _callbackSuccess[bodyPart]! ? Colors.green : null,
                                 enabled: !_callbackSuccess[bodyPart]! && !(bodyPart == BodyPositions.chest),
-                                onTap: () => _onButtonPressed(bodyPart),
+                                onTap: () => _onPositionButtonPressed(bodyPart),
                               ),
                             ),
                         ],
