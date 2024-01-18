@@ -272,7 +272,7 @@ class DeviceModel extends ChangeNotifier {
         magnArray[probeIdx]["x"].toStringAsFixed(2),
         magnArray[probeIdx]["y"].toStringAsFixed(2),
         magnArray[probeIdx]["z"].toStringAsFixed(2),
-        bodyPosition!.nameEng,
+        bodyPosition!.name,
       ];
       csvDataImu9.add(csvRow);
     }
@@ -377,7 +377,7 @@ class DeviceModel extends ChangeNotifier {
     List<String> csvRow = [
       timestamp.toString(),
       _hrData,
-      bodyPosition!.nameEng,
+      bodyPosition!.name,
     ];
     csvDataHr.add(csvRow);
 

@@ -27,6 +27,11 @@ class _ScanWidgetState extends State<ScanWidget> {
   bool hrActive = false;
   String hrData = "";
 
+  static const String appBarTitle = "Multi Sensor Collector";
+  static const String devicesSynchronization = "Devices synchronization...";
+  static const String synchronizationFailed = "Devices synchronization failed, try again.";
+  static const String ok = "Ok";
+
   @override
   void initState() {
     super.initState();
@@ -141,7 +146,7 @@ class _ScanWidgetState extends State<ScanWidget> {
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return const AlertDialog(
-          title: Text('Sincronizzazione dispositivi...'),
+          title: Text(devicesSynchronization),
         );
       },
     );
@@ -153,10 +158,10 @@ class _ScanWidgetState extends State<ScanWidget> {
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Sincronizzazione dispositivi fallita, ritentare.'),
+          title: const Text(synchronizationFailed),
           actions: <Widget>[
             TextButton(
-              child: const Text('Ok'),
+              child: const Text(ok),
               onPressed: () {
                 Navigator.pop(context, true);
               },
@@ -193,7 +198,7 @@ class _ScanWidgetState extends State<ScanWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text('Multi Sensor Collector'),
+          title: const Text(appBarTitle),
         ),
         body: Consumer<AppModel>(
           builder: (context, model, child) {

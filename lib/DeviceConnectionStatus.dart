@@ -4,11 +4,11 @@ extension DeviceConnectionStatusExtenstion on DeviceConnectionStatus {
   String get statusName {
     switch (this) {
       case DeviceConnectionStatus.NOT_CONNECTED:
-        return "Non connesso";
+        return "Not connected";
       case DeviceConnectionStatus.CONNECTING:
-        return "Connessione in corso";
+        return "Connecting...";
       case DeviceConnectionStatus.CONNECTED:
-        return "MDS connesso";
+        return "MDS connected";
     }
   }
 }

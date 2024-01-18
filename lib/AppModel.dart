@@ -29,16 +29,16 @@ class AppModel extends ChangeNotifier {
     notifyListeners(),
   };
   void clearConfiguredDevices () => {
-    _configuredDeviceList.devices.clear(),
+    _configuredDeviceList = DeviceListModel(),
     notifyListeners(),
   };
 
   bool get isScanning => _isScanning;
 
-  String get scanButtonText => _isScanning ? "Stop scansione" : "Avvia scansione";
-  String get configButtonText => "Configura sensori";
-  String get startRecordingButtonText => "Avvia registrazione";
-  String get stopRecordingButtonText => "Ferma registrazione";
+  String get scanButtonText => _isScanning ? "Stop scan" : "Start scan";
+  String get configButtonText => "Configure sensors";
+  String get startRecordingButtonText => "Start recording";
+  String get stopRecordingButtonText => "Stop recording";
   String get dropdownRateSelHint => "Data rate";
   String get hrDataText => "HR:";
 

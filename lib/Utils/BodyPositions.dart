@@ -12,25 +12,6 @@ extension BodyPositionsExtension on BodyPositions {
   String get name {
     switch (this) {
       case BodyPositions.leftWrist:
-        return 'polso sinistro';
-      case BodyPositions.rightWrist:
-        return 'polso destro';
-      case BodyPositions.leftPocket:
-        return 'tasca sinistra';
-      case BodyPositions.rightPocket:
-        return 'tasca destra';
-      case BodyPositions.leftAnkle:
-        return 'caviglia sinistra';
-      case BodyPositions.rightAnkle:
-        return 'caviglia destra';
-      case BodyPositions.chest:
-        return 'petto';
-    }
-  }
-
-  String get nameEng {
-    switch (this) {
-      case BodyPositions.leftWrist:
         return 'left wrist';
       case BodyPositions.rightWrist:
         return 'right wrist';
@@ -50,38 +31,38 @@ extension BodyPositionsExtension on BodyPositions {
   String get nameUpperCase {
     switch (this) {
       case BodyPositions.leftWrist:
-        return 'Polso sinistro';
+        return 'Left wrist';
       case BodyPositions.rightWrist:
-        return 'Polso destro';
+        return 'Right wrist';
       case BodyPositions.leftPocket:
-        return 'Tasca sinistra';
+        return 'Left pocket';
       case BodyPositions.rightPocket:
-        return 'Tasca destra';
+        return 'Right pocket';
       case BodyPositions.leftAnkle:
-        return 'Caviglia sinistra';
+        return 'Left ankle';
       case BodyPositions.rightAnkle:
-        return 'Caviglia destra';
+        return 'Right ankle';
       case BodyPositions.chest:
-        return 'Petto';
+        return 'Chest';
     }
   }
 
   String get limb {
     switch (this) {
       case BodyPositions.leftWrist:
-        return 'il braccio sinistro';
+        return 'the left arm';
       case BodyPositions.rightWrist:
-        return 'il braccio destro';
+        return 'the right arm';
       case BodyPositions.leftPocket:
-        return 'la gamba sinistra';
+        return 'the left leg';
       case BodyPositions.rightPocket:
-        return 'la gamba destra';
+        return 'the right leg';
       case BodyPositions.leftAnkle:
-        return 'la gamba sinistra';
+        return 'the left leg';
       case BodyPositions.rightAnkle:
-        return 'la gamba destra';
+        return 'the right leg';
       case BodyPositions.chest:
-        return 'il petto';
+        return 'the chest';
     }
   }
 }

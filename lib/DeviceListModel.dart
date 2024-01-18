@@ -83,7 +83,7 @@ class DeviceListModel extends ChangeNotifier {
   startRecording(var rate) {
     for (final (idx, device) in devices.indexed) {
       // If chest is defined in the BodyPositions, get also Heart rate data
-      if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "petto")) {
+      if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "chest")) {
         device.subscribeToHr();
         break;
       }
@@ -96,7 +96,7 @@ class DeviceListModel extends ChangeNotifier {
     final DateFormat dateFormat = DateFormat("yyyy-MM-dd_HH-mm-ss");
     final String nowFormatted = dateFormat.format(now);
     for (final (idx, device) in devices.indexed) {
-      if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "petto")) {
+      if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "chest")) {
         device.unsubscribeFromHr(nowFormatted);
         break;
       }
