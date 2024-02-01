@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:multi_sensor_collector/Device.dart';
 import 'package:multi_sensor_collector/DeviceConnectionStatus.dart';
 import 'package:multi_sensor_collector/AppModel.dart';
+import 'package:multi_sensor_collector/DeviceListModel.dart';
 import 'package:multi_sensor_collector/DevicesConfigurationPage.dart';
 import 'package:multi_sensor_collector/Utils/BodyPositions.dart';
 import 'package:multi_sensor_collector/Utils/InfoResponse.dart';
@@ -26,6 +27,8 @@ class _ScanWidgetState extends State<ScanWidget> {
 
   bool hrActive = false;
   String hrData = "";
+
+  DeviceListModel? connectedDevices;
 
   static const String appBarTitle = "Multi Sensor Collector";
   static const String devicesSynchronization = "Devices synchronization...";
@@ -173,20 +176,30 @@ class _ScanWidgetState extends State<ScanWidget> {
   }
 
   Future<void> onRecordButtonPressed(var rate) async {
+    if (connectedDevices == null) {
+      connectedDevices = DeviceListModel();
+      DeviceModel device;
+      model.connectedDeviceList.forEach((element) => {
+        device = DeviceModel(element.name, element.serial),
+        connectedDevices?.addDevice(device),
+      });
+    }
+
     if (recording) {
-      model.configuredDeviceList.stopRecording();
+      connectedDevices?.stopRecordingWithDataLogger();
       setState(() {
         recording = !recording;
       });
     } else {
       _showSynchronizationDialog();
-      bool synchronizationSucceeded = await model.configuredDeviceList.synchronizeDevices();
+      bool? synchronizationSucceeded = await connectedDevices?.synchronizeDevices();
       Navigator.pop(context);
-      if (!synchronizationSucceeded) {
+      if (!synchronizationSucceeded!) {
         await _showSynchronizationFailedDialog();
         return;
       }
-      model.configuredDeviceList.startRecording(rate);
+      connectedDevices?.startRecordingWithDataLogger(rate);
+
       setState(() {
         recording = !recording;
       });
@@ -222,8 +235,7 @@ class _ScanWidgetState extends State<ScanWidget> {
                       Center(
                         child: ElevatedButton(
                           onPressed:
-                            (model.configuredDeviceList.devices.length == model.DEVICES_TO_CONNECT_NUM &&
-                            model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM)
+                            (model.connectedDeviceList.isNotEmpty)
                                 ? () => onRecordButtonPressed(dropdownValue)
                                 : null,
                           child: recording ? Text(model.stopRecordingButtonText) : Text(model.startRecordingButtonText),

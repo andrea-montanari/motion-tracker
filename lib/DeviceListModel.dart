@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import 'DeviceModel.dart';
@@ -6,8 +7,6 @@ import 'Utils/BodyPositions.dart';
 
 class DeviceListModel extends ChangeNotifier {
   List<DeviceModel> _devices = [];
-  static const int MAXIMUM_RUNNING_TIME_FOR_MOVEMENT_CHECK = 10000;
-  static const int INITIAL_DELAY_FOR_MOVEMENT_CHECK = 2000;
 
   List<DeviceModel> get devices => _devices;
 
@@ -101,6 +100,39 @@ class DeviceListModel extends ChangeNotifier {
         break;
       }
       device.unsubscribeFromIMU9(nowFormatted);
+    }
+  }
+
+  startRecordingWithDataLogger(var rate) async {
+    for (final (idx, device) in devices.indexed) {
+      // If chest is defined in the BodyPositions, get also Heart rate data
+      // if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "chest")) {
+      //   device.subscribeToHr();
+      //   break;
+      // }
+      await device.eraseLogbook();
+      await device.configDataLogger(int.parse(rate));
+      await device.createNewLog();
+      await device.startLogging();
+    }
+  }
+
+  stopRecordingWithDataLogger() async {
+    final DateTime now = DateTime.now();
+    final DateFormat dateFormat = DateFormat("yyyy-MM-dd_HH-mm-ss");
+    final String nowFormatted = dateFormat.format(now);
+    for (final (idx, device) in devices.indexed) {
+      // If chest is defined in the BodyPositions, get also Heart rate data
+      // if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "chest")) {
+      //   device.subscribeToHr();
+      //   break;
+      // }
+      // device.configDataLogger(rate);
+      await device.createNewLog();
+
+      await device.stopLogging();
+      await device.fetchLogEntry(nowFormatted);
+      // device.eraseLogbook();
     }
   }
 }

@@ -231,14 +231,12 @@ class DeviceModel extends ChangeNotifier {
   }
 
   Future<void> subscribeToIMU9(var rate) async {
+    sampleRate = rate;
     print("Subscribe to IMU 9");
     _imu9Data = Map();
     print("Subscribing to IMU9. Rate: $sampleRate");
 
-    csvDataImu9 = [];
-    csvDataImu9.add(csvHeaderImu9);
-
-    timeDetailedStart = await getTimeDetailed();
+    await initImu9DataStructure();
 
     _imu9Subscription = MdsAsync.subscribe(
         Mds.createSubscriptionUri(_serial!, "/Meas/IMU9/$rate"), "{}")
@@ -252,34 +250,7 @@ class DeviceModel extends ChangeNotifier {
 
   void _onNewIMU9Data(dynamic imuData) {
     Map<String, dynamic> body = imuData["Body"];
-    List<dynamic> accArray = body["ArrayAcc"];
-    List<dynamic> gyroArray = body["ArrayGyro"];
-    List<dynamic> magnArray = body["ArrayMagn"];
-
-    var sampleInterval = 1000 / sampleRate;
-
-    for (var probeIdx = 0; probeIdx < accArray.length; probeIdx++) {
-
-      // Interpolate timestamp within update
-      int timestamp = body["Timestamp"] +
-          (sampleInterval * probeIdx).round();
-
-      List<String> csvRow = [
-        timestamp.toString(),
-        accArray[probeIdx]["x"].toStringAsFixed(2),
-        accArray[probeIdx]["y"].toStringAsFixed(2),
-        accArray[probeIdx]["z"].toStringAsFixed(2),
-        gyroArray[probeIdx]["x"].toStringAsFixed(2),
-        gyroArray[probeIdx]["y"].toStringAsFixed(2),
-        gyroArray[probeIdx]["z"].toStringAsFixed(2),
-        magnArray[probeIdx]["x"].toStringAsFixed(2),
-        magnArray[probeIdx]["y"].toStringAsFixed(2),
-        magnArray[probeIdx]["z"].toStringAsFixed(2),
-        bodyPosition!.name,
-      ];
-      csvDataImu9.add(csvRow);
-    }
-
+    registerImu9Data(body);
   }
 
   void unsubscribeFromIMU9(String currentDate) async {
@@ -288,53 +259,9 @@ class DeviceModel extends ChangeNotifier {
     }
     _imu9Subscription = null;
 
-    timeDetailedEnd = await getTimeDetailed();
-
-    // Add start time, end time and body position to csv data
-    csvDataImu9[1].add(timeDetailedStart["utc"].toString());
-    csvDataImu9[1].add(timeDetailedStart["relativeTime"].toString());
-    csvDataImu9[2].add(timeDetailedEnd["utc"].toString());
-    csvDataImu9[2].add(timeDetailedEnd["relativeTime"].toString());
-    print("-- first row csv: ${csvDataImu9[1]}");
-    print("-- second row csv: ${csvDataImu9[2]}");
-
-    // Write data to csv file
-    print("Writing data to csv file");
-    csvDirectoryImu9 = await createExternalDirectory();
-    print("Directory: $csvDirectoryImu9");
-    String csvData = const ListToCsvConverter().convert(csvDataImu9);
-    print("Csv data: $csvData");
-    String path = "$csvDirectoryImu9/${currentDate}_IMU9Data-$serial.csv";
-    final File file = await File(path).create(recursive: true);
-    var status = await Permission.storage.status;
-    if (!status.isGranted) {
-      await Permission.storage.request();
-    }
-    await file.writeAsString(csvData);
-    print("File written");
+    writeImu9DataToCsv(currentDate);
 
     notifyListeners();
-  }
-
-  Future<String> createExternalDirectory() async {
-    Directory? dir;
-    if (Platform.isAndroid) {
-      dir = Directory('/storage/emulated/0/Movesense'); // For Android
-    } else if (Platform.isIOS) {
-      dir = await getApplicationSupportDirectory(); // For iOS
-    }
-    if (dir != null) {
-      if ((await dir.exists())) {
-        print("Dir exists, path: ${dir.path}");
-        return dir.path;
-      } else {
-        print("Dir doesn't exist, creating...");
-        dir.create();
-        return dir.path;
-      }
-    } else {
-      throw Exception('Platform not supported');
-    }
   }
 
   void getEcgConfig() {
@@ -447,11 +374,103 @@ class DeviceModel extends ChangeNotifier {
   }
 
 
+  // -------------------------- Data handling -------------------------
+
+  Future<void> initImu9DataStructure() async {
+    csvDataImu9 = [];
+    csvDataImu9.add(csvHeaderImu9);
+    timeDetailedStart = await getTimeDetailed();
+  }
+
+  void registerImu9Data(Map imu9Data) {
+    print("registerImu9Data start");
+    List<dynamic> accArray = imu9Data["ArrayAcc"];
+    List<dynamic> gyroArray = imu9Data["ArrayGyro"];
+    List<dynamic> magnArray = imu9Data["ArrayMagn"];
+
+    var sampleInterval = 1000 / sampleRate;
+
+    for (var probeIdx = 0; probeIdx < accArray.length; probeIdx++) {
+
+      // Interpolate timestamp within update
+      int timestamp = imu9Data["Timestamp"] +
+          (sampleInterval * probeIdx).round();
+
+      List<String> csvRow = [
+        timestamp.toString(),
+        accArray[probeIdx]["x"].toStringAsFixed(2),
+        accArray[probeIdx]["y"].toStringAsFixed(2),
+        accArray[probeIdx]["z"].toStringAsFixed(2),
+        gyroArray[probeIdx]["x"].toStringAsFixed(2),
+        gyroArray[probeIdx]["y"].toStringAsFixed(2),
+        gyroArray[probeIdx]["z"].toStringAsFixed(2),
+        magnArray[probeIdx]["x"].toStringAsFixed(2),
+        magnArray[probeIdx]["y"].toStringAsFixed(2),
+        magnArray[probeIdx]["z"].toStringAsFixed(2),
+        // bodyPosition!.name,
+      ];
+      print("csvRow: $csvRow");
+      csvDataImu9.add(csvRow);
+    }
+    print("registerImu9Data end");
+  }
+
+  Future<String> createExternalDirectory() async {
+    Directory? dir;
+    if (Platform.isAndroid) {
+      dir = Directory('/storage/emulated/0/Movesense'); // For Android
+    } else if (Platform.isIOS) {
+      dir = await getApplicationSupportDirectory(); // For iOS
+    }
+    if (dir != null) {
+      if ((await dir.exists())) {
+        print("Dir exists, path: ${dir.path}");
+        return dir.path;
+      } else {
+        print("Dir doesn't exist, creating...");
+        dir.create();
+        return dir.path;
+      }
+    } else {
+      throw Exception('Platform not supported');
+    }
+  }
+
+  Future<void> writeImu9DataToCsv(var currentDate) async {
+    timeDetailedEnd = await getTimeDetailed();
+    print("csvDataImu9: $csvDataImu9");
+
+    // Add start time, end time and body position to csv data
+    csvDataImu9[1].add(timeDetailedStart["utc"].toString());
+    csvDataImu9[1].add(timeDetailedStart["relativeTime"].toString());
+    csvDataImu9[2].add(timeDetailedEnd["utc"].toString());
+    csvDataImu9[2].add(timeDetailedEnd["relativeTime"].toString());
+    print("-- first row csv: ${csvDataImu9[1]}");
+    print("-- second row csv: ${csvDataImu9[2]}");
+
+    // Write data to csv file
+    print("Writing data to csv file");
+    csvDirectoryImu9 = await createExternalDirectory();
+    print("Directory: $csvDirectoryImu9");
+    String csvData = const ListToCsvConverter().convert(csvDataImu9);
+    print("Csv data: $csvData");
+    String path = "$csvDirectoryImu9/${currentDate}_IMU9Data-$serial.csv";
+    final File file = await File(path).create(recursive: true);
+    var status = await Permission.storage.status;
+    if (!status.isGranted) {
+      await Permission.storage.request();
+    }
+    await file.writeAsString(csvData);
+    print("File written");
+  }
+
+
   // --------------------------- DataLogger ---------------------------
 
   Future<void> configDataLogger(var rate) async {
+    sampleRate = rate;
     Completer completer = Completer();
-    String config = DataLoggerConfig.getDataLoggerConfig("/Meas/IMU9/$sampleRate");
+    String config = DataLoggerConfig.getDataLoggerConfig("/Meas/Acc/$rate");
     Mds.put(Mds.createRequestUri(_serial!, "/Mem/DataLogger/Config/"),
         config,
             (data, statusCode) {
@@ -487,6 +506,7 @@ class DeviceModel extends ChangeNotifier {
   }
 
   Future<void> startLogging() async {
+    await initImu9DataStructure();
     await _setLoggingState(3);
   }
 
@@ -495,6 +515,7 @@ class DeviceModel extends ChangeNotifier {
   }
 
   Future<void> createNewLog() async {
+    print("Create new log");
     Completer completer = Completer();
     Mds.post(Mds.createRequestUri(_serial!, "/Mem/Logbook/Entries/"),
         "{}",
@@ -503,6 +524,7 @@ class DeviceModel extends ChangeNotifier {
           print("Result of createNewLog: $data");
           Map newLogData = jsonDecode(data);
           _currentLogId = newLogData["Content"];
+          print("current log id: $_currentLogId");
           completer.complete();
         },
             (error, statusCode) {
@@ -514,20 +536,39 @@ class DeviceModel extends ChangeNotifier {
     return completer.future;
   }
 
-  void fetchLogEntry() {
+  Future<void> fetchLogEntry(var currentDate) async {
+    Completer completer = Completer();
     print("Fetching log entry");
+    print("Current log id (fetchLogEntry): $_currentLogId");
     String fetchLogEntryUri = "suunto://MDS/Logbook/${_serial!}/ById/${_currentLogId!-1}/Data";
+    final stopwatch = Stopwatch()..start();
     Mds.get(fetchLogEntryUri,
         "{}",
             (data, statusCode) {
           /* onSuccess */
+          print("Fetch Time: ${stopwatch.elapsedMilliseconds}");
           print("Result of fetchLogEntry: $data");
+
+          Map logData = jsonDecode(data)['Meas'];
+          print("logData: $logData");
+          print("logData[imu9]: ${logData['IMU9']}");
+          print("logData[imu9][0]: ${logData['IMU9'][0]}");
+          print("ArrayAcc: ${logData['IMU9'][0]['ArrayAcc']}");
+          for (Map imuData in logData['IMU9']) {
+            registerImu9Data(imuData);
+           }
+
+          writeImu9DataToCsv(currentDate);
+
+          completer.complete();
         },
             (error, statusCode) {
           /* onError */
           print("Error in fetchLogEntry: $error");
+          completer.complete();
         }
     );
+    return completer.future;
   }
 
   Future<void> eraseLogbook() async {
