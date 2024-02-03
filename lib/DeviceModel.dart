@@ -1,15 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 
-import 'package:csv/csv.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mdsflutter/Mds.dart';
 import 'package:multi_sensor_collector/Utils/BodyPositions.dart';
 import 'package:multi_sensor_collector/Utils/RunningStat.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import 'Utils/InfoResponse.dart';
 
@@ -38,8 +34,8 @@ class DeviceModel extends ChangeNotifier {
   RunningStat runningStatZ = RunningStat();
   double stdSum = 0.0;
   List<String> csvHeaderImu6 = ["Timestamp","AccX","AccY","AccZ","GyroX","GyroY","GyroZ", "position", "UTC_start-end", "relativeTime_start-end"];
-  List<List<String>> csvDataImu6 = [];
-  late String csvDirectoryImu6;
+  List<List<String>> _csvDataImu6 = [];
+  List<List<String>> get csvDataImu6 => _csvDataImu6;
 
   BodyPositions? bodyPosition;
 
@@ -53,8 +49,8 @@ class DeviceModel extends ChangeNotifier {
   StreamSubscription? _hrSubscription;
   String _hrData = "";
   List<String> csvHeaderHr = ["Timestamp","hr", "position"];
-  List<List<String>> csvDataHr = [];
-  late String csvDirectoryHr;
+  List<List<String>> _csvDataHr = [];
+  List<List<String>> get csvDataHr => _csvDataHr;
 
   String get hrData => _hrData;
 
@@ -234,8 +230,8 @@ class DeviceModel extends ChangeNotifier {
 
     sampleRate = int.parse(rate.toString());
 
-    csvDataImu6 = [];
-    csvDataImu6.add(csvHeaderImu6);
+    _csvDataImu6 = [];
+    _csvDataImu6.add(csvHeaderImu6);
 
     timeDetailedStart = await getTimeDetailed();
 
@@ -272,12 +268,12 @@ class DeviceModel extends ChangeNotifier {
         gyroArray[probeIdx]["z"].toStringAsFixed(2),
         bodyPosition!.name,
       ];
-      csvDataImu6.add(csvRow);
+      _csvDataImu6.add(csvRow);
     }
 
   }
 
-  void unsubscribeFromIMU6(String currentDate) async {
+  void unsubscribeFromIMU6() async {
     if (_imu6Subscription != null) {
       _imu6Subscription!.cancel();
     }
@@ -286,50 +282,14 @@ class DeviceModel extends ChangeNotifier {
     timeDetailedEnd = await getTimeDetailed();
 
     // Add start time, end time and body position to csv data
-    csvDataImu6[1].add(timeDetailedStart["utc"].toString());
-    csvDataImu6[1].add(timeDetailedStart["relativeTime"].toString());
-    csvDataImu6[2].add(timeDetailedEnd["utc"].toString());
-    csvDataImu6[2].add(timeDetailedEnd["relativeTime"].toString());
-    print("-- first row csv: ${csvDataImu6[1]}");
-    print("-- second row csv: ${csvDataImu6[2]}");
-
-    // Write data to csv file
-    print("Writing data to csv file");
-    csvDirectoryImu6 = await createExternalDirectory();
-    print("Directory: $csvDirectoryImu6");
-    String csvData = const ListToCsvConverter().convert(csvDataImu6);
-    print("Csv data: $csvData");
-    String path = "$csvDirectoryImu6/${currentDate}_IMU6Data-$serial.csv";
-    final File file = await File(path).create(recursive: true);
-    var status = await Permission.storage.status;
-    if (!status.isGranted) {
-      await Permission.storage.request();
-    }
-    await file.writeAsString(csvData);
-    print("File written");
+    _csvDataImu6[1].add(timeDetailedStart["utc"].toString());
+    _csvDataImu6[1].add(timeDetailedStart["relativeTime"].toString());
+    _csvDataImu6[2].add(timeDetailedEnd["utc"].toString());
+    _csvDataImu6[2].add(timeDetailedEnd["relativeTime"].toString());
+    print("-- first row csv: ${_csvDataImu6[1]}");
+    print("-- second row csv: ${_csvDataImu6[2]}");
 
     notifyListeners();
-  }
-
-  Future<String> createExternalDirectory() async {
-    Directory? dir;
-    if (Platform.isAndroid) {
-      dir = Directory('/storage/emulated/0/Movesense'); // For Android
-    } else if (Platform.isIOS) {
-      dir = await getApplicationSupportDirectory(); // For iOS
-    }
-    if (dir != null) {
-      if ((await dir.exists())) {
-        print("Dir exists, path: ${dir.path}");
-        return dir.path;
-      } else {
-        print("Dir doesn't exist, creating...");
-        dir.create();
-        return dir.path;
-      }
-    } else {
-      throw Exception('Platform not supported');
-    }
   }
 
   void getEcgConfig() {
@@ -354,8 +314,8 @@ class DeviceModel extends ChangeNotifier {
     }
     _hrData = "";
 
-    csvDataHr = [];
-    csvDataHr.add(csvHeaderHr);
+    _csvDataHr = [];
+    _csvDataHr.add(csvHeaderHr);
 
     stopwatch.start();
     _hrSubscription = MdsAsync.subscribe(
@@ -377,7 +337,7 @@ class DeviceModel extends ChangeNotifier {
       _hrData,
       bodyPosition!.name,
     ];
-    csvDataHr.add(csvRow);
+    _csvDataHr.add(csvRow);
 
     print("--- HR:\n\tTimestamp: ${body["Timestamp"]}\n\tData: ${body["average"]}");
     print('_onNewHrData() executed in ${stopwatch.elapsedMilliseconds - previousTimestamp}');
@@ -388,7 +348,7 @@ class DeviceModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> unsubscribeFromHr(String currentDate) async {
+  Future<void> unsubscribeFromHr() async {
     if (_onHrStop != null) {
       _onHrStop!.call();
     }
@@ -398,20 +358,6 @@ class DeviceModel extends ChangeNotifier {
     }
     _hrSubscription = null;
     stopwatch.stop();
-
-    // Write data to csv file
-    print("Writing hr data to csv file");
-    csvDirectoryHr = await createExternalDirectory();
-    print("Directory Hr: $csvDirectoryHr");
-    String csvData = const ListToCsvConverter().convert(csvDataHr);
-    print("Csv data hr: $csvData");
-    String path = "$csvDirectoryHr/${currentDate}_HrData-$serial.csv";
-    final File file = await File(path).create(recursive: true);
-    var status = await Permission.storage.status;
-    if (!status.isGranted) {
-      await Permission.storage.request();
-    }
-    await file.writeAsString(csvData);
 
     notifyListeners();
   }
