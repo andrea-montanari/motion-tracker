@@ -87,7 +87,7 @@ class DeviceListModel extends ChangeNotifier {
         device.subscribeToHr();
         break;
       }
-      device.subscribeToIMU9(rate);
+      device.subscribeToIMU6(rate);
     }
   }
 
@@ -100,7 +100,7 @@ class DeviceListModel extends ChangeNotifier {
         device.unsubscribeFromHr(nowFormatted);
         break;
       }
-      device.unsubscribeFromIMU9(nowFormatted);
+      device.unsubscribeFromIMU6(nowFormatted);
     }
   }
 }

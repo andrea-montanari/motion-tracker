@@ -150,7 +150,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
           content:  SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text(liftLimb.replaceAll("POSITION_PLACEHOLDER", bodyPart.limb)),
+                Text(liftLimb.replaceAll("POSITION_PLACEHOLDER", bodyPart.name)),
               ],
             ),
           ),

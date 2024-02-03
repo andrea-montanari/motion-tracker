@@ -31,21 +31,21 @@ class DeviceModel extends ChangeNotifier {
 
   bool get accelerometerSubscribed => _accSubscription != null;
 
-  StreamSubscription? _imu9Subscription;
-  Map<String, String> _imu9Data = Map();
+  StreamSubscription? _imu6Subscription;
+  Map<String, String> _imu6Data = Map();
   RunningStat runningStatX = RunningStat();
   RunningStat runningStatY = RunningStat();
   RunningStat runningStatZ = RunningStat();
   double stdSum = 0.0;
-  List<String> csvHeaderImu9 = ["Timestamp","AccX","AccY","AccZ","GyroX","GyroY","GyroZ","MagnX","MagnY","MagnZ", "position", "UTC_start-end", "relativeTime_start-end"];
-  List<List<String>> csvDataImu9 = [];
-  late String csvDirectoryImu9;
+  List<String> csvHeaderImu6 = ["Timestamp","AccX","AccY","AccZ","GyroX","GyroY","GyroZ", "position", "UTC_start-end", "relativeTime_start-end"];
+  List<List<String>> csvDataImu6 = [];
+  late String csvDirectoryImu6;
 
   BodyPositions? bodyPosition;
 
-  Map<String, String> get imu9Data => _imu9Data;
+  Map<String, String> get imu6Data => _imu6Data;
 
-  bool get imu9Subscribed => _imu9Subscription != null;
+  bool get imu6Subscribed => _imu6Subscription != null;
 
   List<RunningStat> get runningStats =>
       [runningStatX, runningStatY, runningStatZ];
@@ -227,31 +227,32 @@ class DeviceModel extends ChangeNotifier {
     return completer.future;
   }
 
-  Future<void> subscribeToIMU9(var rate) async {
-    print("Subscribe to IMU 9");
-    _imu9Data = Map();
-    print("Subscribing to IMU9. Rate: $sampleRate");
+  Future<void> subscribeToIMU6(var rate) async {
+    print("Subscribe to IMU 6");
+    _imu6Data = Map();
+    print("Subscribing to IMU6. Rate: $sampleRate");
 
-    csvDataImu9 = [];
-    csvDataImu9.add(csvHeaderImu9);
+    sampleRate = int.parse(rate.toString());
+
+    csvDataImu6 = [];
+    csvDataImu6.add(csvHeaderImu6);
 
     timeDetailedStart = await getTimeDetailed();
 
-    _imu9Subscription = MdsAsync.subscribe(
-        Mds.createSubscriptionUri(_serial!, "/Meas/IMU9/$rate"), "{}")
+    _imu6Subscription = MdsAsync.subscribe(
+        Mds.createSubscriptionUri(_serial!, "/Meas/IMU6/$rate"), "{}")
         .handleError((error) {
       print("Error: " + error.toString());
     })
         .listen((event) {
-      _onNewIMU9Data(event);
+      _onNewIMU6Data(event);
     });
   }
 
-  void _onNewIMU9Data(dynamic imuData) {
+  void _onNewIMU6Data(dynamic imuData) {
     Map<String, dynamic> body = imuData["Body"];
     List<dynamic> accArray = body["ArrayAcc"];
     List<dynamic> gyroArray = body["ArrayGyro"];
-    List<dynamic> magnArray = body["ArrayMagn"];
 
     var sampleInterval = 1000 / sampleRate;
 
@@ -269,39 +270,36 @@ class DeviceModel extends ChangeNotifier {
         gyroArray[probeIdx]["x"].toStringAsFixed(2),
         gyroArray[probeIdx]["y"].toStringAsFixed(2),
         gyroArray[probeIdx]["z"].toStringAsFixed(2),
-        magnArray[probeIdx]["x"].toStringAsFixed(2),
-        magnArray[probeIdx]["y"].toStringAsFixed(2),
-        magnArray[probeIdx]["z"].toStringAsFixed(2),
         bodyPosition!.name,
       ];
-      csvDataImu9.add(csvRow);
+      csvDataImu6.add(csvRow);
     }
 
   }
 
-  void unsubscribeFromIMU9(String currentDate) async {
-    if (_imu9Subscription != null) {
-      _imu9Subscription!.cancel();
+  void unsubscribeFromIMU6(String currentDate) async {
+    if (_imu6Subscription != null) {
+      _imu6Subscription!.cancel();
     }
-    _imu9Subscription = null;
+    _imu6Subscription = null;
 
     timeDetailedEnd = await getTimeDetailed();
 
     // Add start time, end time and body position to csv data
-    csvDataImu9[1].add(timeDetailedStart["utc"].toString());
-    csvDataImu9[1].add(timeDetailedStart["relativeTime"].toString());
-    csvDataImu9[2].add(timeDetailedEnd["utc"].toString());
-    csvDataImu9[2].add(timeDetailedEnd["relativeTime"].toString());
-    print("-- first row csv: ${csvDataImu9[1]}");
-    print("-- second row csv: ${csvDataImu9[2]}");
+    csvDataImu6[1].add(timeDetailedStart["utc"].toString());
+    csvDataImu6[1].add(timeDetailedStart["relativeTime"].toString());
+    csvDataImu6[2].add(timeDetailedEnd["utc"].toString());
+    csvDataImu6[2].add(timeDetailedEnd["relativeTime"].toString());
+    print("-- first row csv: ${csvDataImu6[1]}");
+    print("-- second row csv: ${csvDataImu6[2]}");
 
     // Write data to csv file
     print("Writing data to csv file");
-    csvDirectoryImu9 = await createExternalDirectory();
-    print("Directory: $csvDirectoryImu9");
-    String csvData = const ListToCsvConverter().convert(csvDataImu9);
+    csvDirectoryImu6 = await createExternalDirectory();
+    print("Directory: $csvDirectoryImu6");
+    String csvData = const ListToCsvConverter().convert(csvDataImu6);
     print("Csv data: $csvData");
-    String path = "$csvDirectoryImu9/${currentDate}_IMU9Data-$serial.csv";
+    String path = "$csvDirectoryImu6/${currentDate}_IMU6Data-$serial.csv";
     final File file = await File(path).create(recursive: true);
     var status = await Permission.storage.status;
     if (!status.isGranted) {
