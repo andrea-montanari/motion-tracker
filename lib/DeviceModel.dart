@@ -468,9 +468,9 @@ class DeviceModel extends ChangeNotifier {
   // --------------------------- DataLogger ---------------------------
 
   Future<void> configDataLogger(var rate) async {
-    sampleRate = rate;
+    sampleRate = int.parse(rate.toString());
     Completer completer = Completer();
-    String config = DataLoggerConfig.getDataLoggerConfig("/Meas/Acc/$rate");
+    String config = DataLoggerConfig.getDataLoggerConfig("/Meas/IMU6/$rate");
     Mds.put(Mds.createRequestUri(_serial!, "/Mem/DataLogger/Config/"),
         config,
             (data, statusCode) {
@@ -558,7 +558,7 @@ class DeviceModel extends ChangeNotifier {
             registerImu9Data(imuData);
            }
 
-          writeImu9DataToCsv(currentDate);
+          // writeImu9DataToCsv(currentDate);
 
           completer.complete();
         },

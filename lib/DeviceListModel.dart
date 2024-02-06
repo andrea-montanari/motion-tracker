@@ -111,7 +111,7 @@ class DeviceListModel extends ChangeNotifier {
       //   break;
       // }
       await device.eraseLogbook();
-      await device.configDataLogger(int.parse(rate));
+      await device.configDataLogger(rate);
       await device.createNewLog();
       await device.startLogging();
     }
