@@ -5,6 +5,7 @@ enum BodyPositions {
   rightPocket,
   leftAnkle,
   rightAnkle,
+  belt,
   chest,
 }
 
@@ -23,6 +24,8 @@ extension BodyPositionsExtension on BodyPositions {
         return 'left ankle';
       case BodyPositions.rightAnkle:
         return 'right ankle';
+      case BodyPositions.belt:
+        return 'belt';
       case BodyPositions.chest:
         return 'chest';
     }
@@ -42,6 +45,8 @@ extension BodyPositionsExtension on BodyPositions {
         return 'Left ankle';
       case BodyPositions.rightAnkle:
         return 'Right ankle';
+      case BodyPositions.belt:
+        return 'Belt';
       case BodyPositions.chest:
         return 'Chest';
     }
@@ -61,6 +66,8 @@ extension BodyPositionsExtension on BodyPositions {
         return 'the left leg';
       case BodyPositions.rightAnkle:
         return 'the right leg';
+      case BodyPositions.belt:
+        return 'the belt';
       case BodyPositions.chest:
         return 'the chest';
     }

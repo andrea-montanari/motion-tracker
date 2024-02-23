@@ -22,7 +22,10 @@ class _ScanWidgetState extends State<ScanWidget> {
   bool recording = false;
 
   List sampleRates = [];
-  late var dropdownValue;
+  late var sampleRatesDropdownValue;
+
+  List activitiesList = [];
+  late var activityDropdownValue;
 
   bool hrActive = false;
   String hrData = "";
@@ -51,6 +54,16 @@ class _ScanWidgetState extends State<ScanWidget> {
         updateDropdownElements(imuInfo.sampleRates),
       }
     });
+
+    activitiesList = [
+      "Walking",
+      "Sitting",
+      "Upstairs",
+      "Downstairs",
+      "Office"
+    ];
+    activityDropdownValue = activitiesList[0];
+
     model.onDeviceMdsDisconnected((device) => model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM ? allDevicesConnected = true : allDevicesConnected = false,);
   }
 
@@ -93,7 +106,7 @@ class _ScanWidgetState extends State<ScanWidget> {
   void updateDropdownElements(List sampleRates) {
     setState(() {
       this.sampleRates = sampleRates;
-      dropdownValue = this.sampleRates[1];  // Defaults to 26Hz
+      sampleRatesDropdownValue = this.sampleRates[0];  // Defaults to 26Hz
     });
   }
 
@@ -137,7 +150,7 @@ class _ScanWidgetState extends State<ScanWidget> {
         MaterialPageRoute(
             builder: (context) => DevicesConfigurationPage()
         )
-    ).then((_) => catchHrDataCallbacks());
+    );
   }
 
   Future<bool?> _showSynchronizationDialog() async {
@@ -172,7 +185,7 @@ class _ScanWidgetState extends State<ScanWidget> {
     );
   }
 
-  Future<void> onRecordButtonPressed(var rate) async {
+  Future<void> onRecordButtonPressed(var rate, String activity) async {
     if (recording) {
       model.configuredDeviceList.stopRecording();
       setState(() {
@@ -186,7 +199,7 @@ class _ScanWidgetState extends State<ScanWidget> {
         await _showSynchronizationFailedDialog();
         return;
       }
-      model.configuredDeviceList.startRecording(rate);
+      model.configuredDeviceList.startRecording(rate, activity);
       setState(() {
         recording = !recording;
       });
@@ -219,23 +232,25 @@ class _ScanWidgetState extends State<ScanWidget> {
                   Stack(
                     children: [
 
+                      // Start/stop recording button
                       Center(
                         child: ElevatedButton(
                           onPressed:
                             (model.configuredDeviceList.devices.length == model.DEVICES_TO_CONNECT_NUM &&
                             model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM)
-                                ? () => onRecordButtonPressed(dropdownValue)
+                                ? () => onRecordButtonPressed(sampleRatesDropdownValue, activityDropdownValue)
                                 : null,
                           child: recording ? Text(model.stopRecordingButtonText) : Text(model.startRecordingButtonText),
                         ),
                       ),
 
+                      // Sample rates dropdown
                       if (sampleRates.isNotEmpty) Column(
                         children:  [
                           Text(model.dropdownRateSelHint),
                           DropdownButton<String>(
                             alignment: Alignment.center,
-                            value: dropdownValue.toString(),
+                            value: sampleRatesDropdownValue.toString(),
                             icon: const Icon(Icons.arrow_downward),
                             elevation: 16,
                             underline: Container(
@@ -245,7 +260,7 @@ class _ScanWidgetState extends State<ScanWidget> {
                             onChanged: (String? value) {
                               // This is called when the user selects an item.
                               setState(() {
-                                dropdownValue = value!;
+                                sampleRatesDropdownValue = value!;
                               });
                             },
                             items: sampleRates.map<DropdownMenuItem<String>>((var value) {
@@ -257,6 +272,7 @@ class _ScanWidgetState extends State<ScanWidget> {
                           ),
                         ]
                       ),
+
                     ],
                   ),
                   if (hrActive)
@@ -267,6 +283,35 @@ class _ScanWidgetState extends State<ScanWidget> {
                         Text(model.hrDataText),
                         Text(hrData)
                       ],
+                  ),
+
+                  // Activities dropdown
+                  Column(
+                      children:  [
+                        Text(model.dropdownActivitiesSelHint),
+                        DropdownButton<String>(
+                          alignment: Alignment.center,
+                          value: activityDropdownValue.toString(),
+                          icon: const Icon(Icons.arrow_downward),
+                          elevation: 16,
+                          underline: Container(
+                            color: Colors.black12,
+                            height: 2,
+                          ),
+                          onChanged: (String? value) {
+                            // This is called when the user selects an item.
+                            setState(() {
+                              activityDropdownValue = value!;
+                            });
+                          },
+                          items: activitiesList.map<DropdownMenuItem<String>>((var value) {
+                            return DropdownMenuItem(
+                              value: value.toString(),
+                              child: Text(value.toString()),
+                            );
+                          }).toList(),
+                        ),
+                      ]
                   ),
                 ],
               ),

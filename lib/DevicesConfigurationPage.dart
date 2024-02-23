@@ -1,6 +1,6 @@
 import 'dart:core';
 import 'package:flutter/material.dart';
-import 'package:multi_sensor_collector/UserIdForm.dart';
+import 'package:multi_sensor_collector/UserInfoForm.dart';
 import 'package:multi_sensor_collector/Utils/BodyPositions.dart';
 import 'package:provider/provider.dart';
 import 'package:timer_count_down/timer_count_down.dart';
@@ -24,7 +24,11 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
   late DeviceListModel deviceListModel;
   late AppModel model;
   final GlobalKey<FormState> userIdFormKey = GlobalKey<FormState>();
-  final TextEditingController userIdTextController = TextEditingController();
+  final TextEditingController _userIdTextController = TextEditingController();
+  final TextEditingController _userAgeTextController = TextEditingController();
+  final TextEditingController _userSexTextController = TextEditingController();
+  final TextEditingController _userHeightTextController = TextEditingController();
+  final TextEditingController _userWeightTextController = TextEditingController();
 
   static const String movementDetected = "Movement detected";
   static const String deviceSelection = "Is the device with the LED the one located on the POSITION_PLACEHOLDER?";
@@ -34,12 +38,12 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
   static const String getInPosition = "Stand up with arms extended along the body and perform the movement at the end of the countdown";
   static const String cancel = "Cancel";
   static const String movementDetection = "Movement detection";
-  static const String liftLimb = "Lift your POSITION_PLACEHOLDER";
+  static const String liftLimb = "Move your POSITION_PLACEHOLDER";
   static const String confirmResetConf = "Do you confirm that you want to reset the configuration?";
   static const String devicesConfiguration = "Configuration";
   static const String configComplete = "Configuration successful";
   static const String resetConfiguration = "Reset configuration";
-  static const String userId = "User ID";
+  static const String userInfo = "User Info";
   static const String devicesConfig = "Devices Position";
   static const String submitConfiguration = "Submit configuration";
 
@@ -231,11 +235,10 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
         bool? movementDetectedDialogResult = await _showMovementDetectedDialog(bodyPart);
         device.switchLed();
         if (movementDetectedDialogResult != null && movementDetectedDialogResult) {
-          deviceListModel.devices
+          DeviceModel selectedDevice = deviceListModel.devices
               .where((element) => element.serial == device.serial)
-              .first
-              .bodyPosition = bodyPart;
-          device.bodyPosition = bodyPart;
+              .first;
+          selectedDevice.bodyPosition = bodyPart;
           setState(() {
             _callbackSuccess[bodyPart] = true;
           });
@@ -252,7 +255,8 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
     print("Body part: ${bodyPart.name}");
     BodyPositions? chestPosition = BodyPositions.values.firstWhereOrNull((element) => element.name == "chest");
     if (chestPosition != null && deviceListModel.devices.where((element) => element.bodyPosition != null).length == deviceListModel.devices.length - 1) {
-      deviceListModel.devices.where((element) => element.bodyPosition == null).first.bodyPosition = chestPosition;
+      DeviceModel chestDevice = deviceListModel.devices.where((element) => element.bodyPosition == null).first;
+      chestDevice.bodyPosition = chestPosition;
       model.configuredDeviceList = deviceListModel;
       print("Configuration complete");
       setState(() {
@@ -290,7 +294,15 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
     print("_devicesConfigurationCompleted: $_devicesConfigurationCompleted");
     if (userIdFormKey.currentState!.validate() && _devicesConfigurationCompleted) {
       _configurationCompleted.value = true;
-      model.configuredDeviceList.userId = userIdTextController.text;
+      model.configuredDeviceList.userId = _userIdTextController.text;
+      for (final device in model.configuredDeviceList.devices) {
+        device.userId = _userIdTextController.text;
+        device.userAge = _userAgeTextController.text;
+        device.userSex = _userSexTextController.text;
+        print("User sex: ${_userSexTextController.text}");
+        device.userHeight = _userHeightTextController.text;
+        device.userWeight = _userWeightTextController.text;
+      }
     }
   }
 
@@ -330,43 +342,57 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
                       )
                     ],
                   ),
-                  body: Material(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            userId,
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 20),
-                          ),
-
-                          UserIdForm(formKey: userIdFormKey, textController: userIdTextController),
-
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 30, horizontal: 0),
-                            child: Text(
-                              devicesConfig,
+                  body:  Material(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              userInfo,
                               style: TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 20),
                             ),
-                          ),
 
-                          for (final bodyPart in BodyPositions.values)
-                            Card(
-                              child: ListTile(
-                                title: Text(bodyPart.nameUpperCase),
-                                tileColor: _callbackSuccess[bodyPart]! ? Colors.green : null,
-                                enabled: !_callbackSuccess[bodyPart]! && !(bodyPart == BodyPositions.chest),
-                                onTap: () => _onPositionButtonPressed(bodyPart),
+                            // User info form
+                            UserInfoForm(
+                                formKey: userIdFormKey,
+                                idController: _userIdTextController,
+                                ageController: _userAgeTextController,
+                                sexController: _userSexTextController,
+                                heightController: _userHeightTextController,
+                                weightController: _userWeightTextController,
+                            ),
+
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 30, horizontal: 0),
+                              child: Text(
+                                devicesConfig,
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 20),
                               ),
                             ),
-                          ElevatedButton(
-                            onPressed: () => _onSubmitConfigButtonPressed(),
-                             child: const Text(submitConfiguration),
-                          )
-                        ],
-                      )
-                  )
+
+                            for (final bodyPart in BodyPositions.values)
+                              Card(
+                                child: ListTile(
+                                  title: Text(bodyPart.nameUpperCase),
+                                  tileColor: _callbackSuccess[bodyPart]! ? Colors.green : null,
+                                  enabled: !_callbackSuccess[bodyPart]! && !(bodyPart == BodyPositions.chest),
+                                  onTap: () => _onPositionButtonPressed(bodyPart),
+                                ),
+                              ),
+                            Container(
+                                margin: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 0.0),
+                              child:
+                                ElevatedButton(
+                                  onPressed: () => _onSubmitConfigButtonPressed(),
+                                   child: const Text(submitConfiguration),
+                                )
+                            )
+                          ],
+                        )
+                  ))
               );
             }));
   }

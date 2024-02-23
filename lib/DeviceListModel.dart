@@ -16,6 +16,7 @@ class DeviceListModel extends ChangeNotifier {
   static const int INITIAL_DELAY_FOR_MOVEMENT_CHECK = 2000;
   late String _nowFormatted;
   late String userId;
+  late String currentActivity;
 
   List<DeviceModel> get devices => _devices;
 
@@ -88,41 +89,32 @@ class DeviceListModel extends ChangeNotifier {
     return false;
   }
 
-  startRecording(var rate) {
-    for (final (idx, device) in devices.indexed) {
-      // If chest is defined in the BodyPositions, get also Heart rate data
-      if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "chest")) {
-        device.subscribeToHr();
-        break;
-      }
-      device.subscribeToIMU6(rate);
+  startRecording(var rate, String activity) {
+    currentActivity = activity;
+    for (final  device in devices) {
+      device.subscribeToIMU9(rate, activity);
     }
   }
 
-  stopRecording() {
+  stopRecording() async {
     final DateTime now = DateTime.now();
     final DateFormat dateFormat = DateFormat("yyyy-MM-dd_HH-mm-ss");
     _nowFormatted = dateFormat.format(now);
-    for (final (idx, device) in devices.indexed) {
-      if (idx == devices.length-1 && BodyPositions.values.any((element) => element.name == "chest")) {
-        device.unsubscribeFromHr();
-        writeImuDataToCsvFile(device);
-        break;
-      }
-      device.unsubscribeFromIMU6();
-      writeHrDataToCsvFile(device);
+    for (final device in devices) {
+      await device.unsubscribeFromIMU9();
+      writeImuDataToCsvFile(device);
     }
   }
 
   Future<void> writeImuDataToCsvFile(DeviceModel device) async {
     print("Writing data to csv file");
-    String csvDirectoryImu6 = await createExternalDirectory();
-    print("Directory: $csvDirectoryImu6");
-    List<List<String>> csvDataImu6 = device.csvDataImu6;
-    String csvData = const ListToCsvConverter().convert(csvDataImu6);
+    String csvDirectoryImu9 = await createExternalDirectory();
+    print("Directory: $csvDirectoryImu9");
+    List<List<String>> csvDataImu9 = device.csvDataImu9;
+    String csvData = const ListToCsvConverter().convert(csvDataImu9);
     print("Csv data: $csvData");
     String partialSerial = device.serial!.substring(device.serial!.length - 4);
-    String path = "$csvDirectoryImu6/${userId}_${_nowFormatted}_IMU6Data-$partialSerial.csv";
+    String path = "$csvDirectoryImu9/User${userId}_${currentActivity}_${_nowFormatted}_IMU9Data-$partialSerial.csv";
     final File file = await File(path).create(recursive: true);
     var status = await Permission.storage.status;
     if (!status.isGranted) {

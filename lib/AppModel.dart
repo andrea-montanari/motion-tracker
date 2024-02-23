@@ -40,6 +40,7 @@ class AppModel extends ChangeNotifier {
   String get startRecordingButtonText => "Start recording";
   String get stopRecordingButtonText => "Stop recording";
   String get dropdownRateSelHint => "Data rate";
+  String get dropdownActivitiesSelHint => "Activity";
   String get hrDataText => "HR:";
 
   void onDeviceMdsConnected(void Function(Device) cb) {

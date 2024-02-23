@@ -27,21 +27,27 @@ class DeviceModel extends ChangeNotifier {
 
   bool get accelerometerSubscribed => _accSubscription != null;
 
-  StreamSubscription? _imu6Subscription;
-  Map<String, String> _imu6Data = Map();
+  StreamSubscription? _imu9Subscription;
+  Map<String, String> _imu9Data = Map();
   RunningStat runningStatX = RunningStat();
   RunningStat runningStatY = RunningStat();
   RunningStat runningStatZ = RunningStat();
   double stdSum = 0.0;
-  List<String> csvHeaderImu6 = ["Timestamp","AccX","AccY","AccZ","GyroX","GyroY","GyroZ", "position", "UTC_start-end", "relativeTime_start-end"];
-  List<List<String>> _csvDataImu6 = [];
-  List<List<String>> get csvDataImu6 => _csvDataImu6;
+  List<String> csvHeaderImu9 = ["Userid", "UserAge", "UserSex", "UserHeight", "UserWeight", "Activity", "Timestamp","AccX","AccY","AccZ","GyroX","GyroY","GyroZ", "MagnX", "MagnY", "MagnZ", "position", "UTC_start-end", "relativeTime_start-end"];
+  List<List<String>> _csvDataImu9 = [];
+  List<List<String>> get csvDataImu9 => _csvDataImu9;
 
   BodyPositions? bodyPosition;
+  String? userId;
+  String? userAge;
+  String? userSex;
+  String? userHeight;
+  String? userWeight;
+  late String activity;
 
-  Map<String, String> get imu6Data => _imu6Data;
+  Map<String, String> get imu9Data => _imu9Data;
 
-  bool get imu6Subscribed => _imu6Subscription != null;
+  bool get imu9Subscribed => _imu9Subscription != null;
 
   List<RunningStat> get runningStats =>
       [runningStatX, runningStatY, runningStatZ];
@@ -223,32 +229,34 @@ class DeviceModel extends ChangeNotifier {
     return completer.future;
   }
 
-  Future<void> subscribeToIMU6(var rate) async {
-    print("Subscribe to IMU 6");
-    _imu6Data = Map();
-    print("Subscribing to IMU6. Rate: $sampleRate");
+  Future<void> subscribeToIMU9(var rate, String activity) async {
+    print("Subscribe to IMU 9");
+    this.activity = activity;
+    _imu9Data = Map();
+    print("Subscribing to IMU9. Rate: $sampleRate");
 
     sampleRate = int.parse(rate.toString());
 
-    _csvDataImu6 = [];
-    _csvDataImu6.add(csvHeaderImu6);
+    _csvDataImu9 = [];
+    _csvDataImu9.add(csvHeaderImu9);
 
     timeDetailedStart = await getTimeDetailed();
 
-    _imu6Subscription = MdsAsync.subscribe(
-        Mds.createSubscriptionUri(_serial!, "/Meas/IMU6/$rate"), "{}")
+    _imu9Subscription = MdsAsync.subscribe(
+        Mds.createSubscriptionUri(_serial!, "/Meas/IMU9/$rate"), "{}")
         .handleError((error) {
       print("Error: " + error.toString());
     })
         .listen((event) {
-      _onNewIMU6Data(event);
+      _onNewIMU9Data(event);
     });
   }
 
-  void _onNewIMU6Data(dynamic imuData) {
+  void _onNewIMU9Data(dynamic imuData) {
     Map<String, dynamic> body = imuData["Body"];
     List<dynamic> accArray = body["ArrayAcc"];
     List<dynamic> gyroArray = body["ArrayGyro"];
+    List<dynamic> magnArray = body["ArrayMagn"];
 
     var sampleInterval = 1000 / sampleRate;
 
@@ -259,6 +267,12 @@ class DeviceModel extends ChangeNotifier {
           (sampleInterval * probeIdx).round();
 
       List<String> csvRow = [
+        userId!,
+        userAge!,
+        userSex!,
+        userHeight!,
+        userWeight!,
+        activity,
         timestamp.toString(),
         accArray[probeIdx]["x"].toStringAsFixed(2),
         accArray[probeIdx]["y"].toStringAsFixed(2),
@@ -266,28 +280,31 @@ class DeviceModel extends ChangeNotifier {
         gyroArray[probeIdx]["x"].toStringAsFixed(2),
         gyroArray[probeIdx]["y"].toStringAsFixed(2),
         gyroArray[probeIdx]["z"].toStringAsFixed(2),
+        magnArray[probeIdx]["x"].toStringAsFixed(2),
+        magnArray[probeIdx]["y"].toStringAsFixed(2),
+        magnArray[probeIdx]["z"].toStringAsFixed(2),
         bodyPosition!.name,
       ];
-      _csvDataImu6.add(csvRow);
+      _csvDataImu9.add(csvRow);
     }
 
   }
 
-  void unsubscribeFromIMU6() async {
-    if (_imu6Subscription != null) {
-      _imu6Subscription!.cancel();
+  Future<void> unsubscribeFromIMU9() async {
+    if (_imu9Subscription != null) {
+      _imu9Subscription!.cancel();
     }
-    _imu6Subscription = null;
+    _imu9Subscription = null;
 
     timeDetailedEnd = await getTimeDetailed();
 
-    // Add start time, end time and body position to csv data
-    _csvDataImu6[1].add(timeDetailedStart["utc"].toString());
-    _csvDataImu6[1].add(timeDetailedStart["relativeTime"].toString());
-    _csvDataImu6[2].add(timeDetailedEnd["utc"].toString());
-    _csvDataImu6[2].add(timeDetailedEnd["relativeTime"].toString());
-    print("-- first row csv: ${_csvDataImu6[1]}");
-    print("-- second row csv: ${_csvDataImu6[2]}");
+    // Add start time and end time to csv data
+    _csvDataImu9[1].add(timeDetailedStart["utc"].toString());
+    _csvDataImu9[1].add(timeDetailedStart["relativeTime"].toString());
+    _csvDataImu9[2].add(timeDetailedEnd["utc"].toString());
+    _csvDataImu9[2].add(timeDetailedEnd["relativeTime"].toString());
+    print("-- first row csv: ${_csvDataImu9[1]}");
+    print("-- second row csv: ${_csvDataImu9[2]}");
 
     notifyListeners();
   }
