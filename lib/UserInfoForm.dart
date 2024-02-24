@@ -32,13 +32,14 @@ class UserInfoFormState extends State<UserInfoForm>{
   static const String userWeightLabel = "Weight";
   static const String valueEmptyErrorMessage = "This field is required";
   static const String notIntegerErrorMessage = "Please enter a non-negative whole number";
+  static const String sexDropdownDefaultValue = "--";
 
-  static const List sexList = ["Female", "Male", "Intersex", "Prefer not to disclose"];
+  static const List sexList = ["--", "Female", "Male", "Intersex", "Prefer not to disclose"];
 
   @override
   Widget build(BuildContext context) {
     // Build a Form widget using the _formKey created above.
-    widget.sexController.text = sexList[0];
+    String sexDropdownValue = sexDropdownDefaultValue;
 
     return Form(
       key: widget.formKey,
@@ -144,14 +145,19 @@ class UserInfoFormState extends State<UserInfoForm>{
             child: DropdownButtonFormField(
               alignment: Alignment.center,
               isDense: true,
-              value: widget.sexController.text.toString(),
+              value: sexDropdownValue,
               decoration: const InputDecoration(labelText: userSexLabel),
               icon: const Icon(Icons.arrow_downward),
               elevation: 16,
               onChanged: (String? value) {
                 // This is called when the user selects an item.
+                sexDropdownValue = value!;
                 widget.sexController.text = value!;
-                print("sex: ${widget.sexController.text}");
+              },
+              validator: (value) {
+                if (widget.sexController.text == "") {
+                  return valueEmptyErrorMessage;
+                }
               },
               items: sexList.map<DropdownMenuItem<String>>((var value) {
                 return DropdownMenuItem(
