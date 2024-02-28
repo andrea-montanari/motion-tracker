@@ -150,7 +150,9 @@ class _ScanWidgetState extends State<ScanWidget> {
         MaterialPageRoute(
             builder: (context) => DevicesConfigurationPage()
         )
-    );
+    ).then((_) {
+      setState(() {});
+    });
   }
 
   Future<bool?> _showSynchronizationDialog() async {
