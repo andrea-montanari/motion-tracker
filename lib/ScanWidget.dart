@@ -44,7 +44,7 @@ class _ScanWidgetState extends State<ScanWidget> {
     DeviceModel deviceModel;
     model.onDeviceMdsConnected((device) async => {
       print("Deviced connected: ${model.connectedDeviceList.length} Devices to connect num: ${model.DEVICES_TO_CONNECT_NUM}"),
-      model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM ? allDevicesConnected = true : allDevicesConnected = false,
+      model.connectedDeviceList.length >= model.DEVICES_TO_CONNECT_NUM ? allDevicesConnected = true : allDevicesConnected = false,
 
       // Get available sample rates on first connection
       if (sampleRates.isEmpty) {
@@ -225,6 +225,8 @@ class _ScanWidgetState extends State<ScanWidget> {
                     child: Text(model.scanButtonText),
                   ),
                   _buildDeviceList(model.deviceList),
+
+                  // Configure devices button
                   ElevatedButton(
                     onPressed: allDevicesConnected ? onConfigButtonPressed : null,
                     child: Text(model.configButtonText),
@@ -236,8 +238,8 @@ class _ScanWidgetState extends State<ScanWidget> {
                       Center(
                         child: ElevatedButton(
                           onPressed:
-                            (model.configuredDeviceList.devices.length == model.DEVICES_TO_CONNECT_NUM &&
-                            model.connectedDeviceList.length == model.DEVICES_TO_CONNECT_NUM)
+                            (model.configuredDeviceList.devices.length >= model.DEVICES_TO_CONNECT_NUM &&
+                            model.connectedDeviceList.length >= model.DEVICES_TO_CONNECT_NUM)
                                 ? () => onRecordButtonPressed(sampleRatesDropdownValue, activityDropdownValue)
                                 : null,
                           child: recording ? Text(model.stopRecordingButtonText) : Text(model.startRecordingButtonText),

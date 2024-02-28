@@ -10,7 +10,7 @@ import 'Device.dart';
 import 'DeviceListModel.dart';
 
 class AppModel extends ChangeNotifier {
-  final int _DEVICES_TO_CONNECT_NUM = BodyPositions.values.length;
+  final int _DEVICES_TO_CONNECT_NUM = 1;
   int get DEVICES_TO_CONNECT_NUM => _DEVICES_TO_CONNECT_NUM;
   final Set<Device> _deviceList = Set();
   final Set<Device> _connectedDeviceList = Set();

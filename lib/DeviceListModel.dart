@@ -26,7 +26,12 @@ class DeviceListModel extends ChangeNotifier {
   }
 
   void removeDevice(DeviceModel deviceToRemove) {
-    devices.remove(deviceToRemove);
+    for (var device in devices) {
+      if (device.serial == deviceToRemove.serial) {
+        devices.remove(device);
+        break;
+      }
+    }
     notifyListeners();
   }
 

@@ -22,7 +22,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
   late bool _devicesConfigurationCompleted;
   late ValueNotifier<bool> _configurationCompleted;
   late DeviceListModel deviceListModel;
-  late AppModel model;
+  late AppModel _model;
   final GlobalKey<FormState> userIdFormKey = GlobalKey<FormState>();
   final TextEditingController _userIdTextController = TextEditingController();
   final TextEditingController _userAgeTextController = TextEditingController();
@@ -34,12 +34,14 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
   static const String deviceSelection = "Is the device with the LED the one located on the POSITION_PLACEHOLDER?";
   static const String yes = "Yes";
   static const String no = "No";
+  static const String ok = "Ok";
   static const String getReady = "Get ready for the configuration of the sensor in position POSITION_PLACEHOLDER";
   static const String getInPosition = "Stand up with arms extended along the body and perform the movement at the end of the countdown";
   static const String cancel = "Cancel";
   static const String movementDetection = "Movement detection";
   static const String liftLimb = "Move your POSITION_PLACEHOLDER";
   static const String confirmResetConf = "Do you confirm that you want to reset the configuration?";
+  static const String configIncomplete = "Fill all the user information and configure at least one device";
   static const String devicesConfiguration = "Configuration";
   static const String configComplete = "Configuration successful";
   static const String resetConfiguration = "Reset configuration";
@@ -50,7 +52,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
   @override
   void initState() {
     super.initState();
-    model = Provider.of<AppModel>(context, listen: false);
+    _model = Provider.of<AppModel>(context, listen: false);
     initDevicesState();
   }
 
@@ -58,21 +60,22 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
     deviceListModel = DeviceListModel();
     _callbackSuccess = Map();
     DeviceModel deviceModel;
-    if (model.configuredDeviceList.devices.length == model.DEVICES_TO_CONNECT_NUM) {
-      deviceListModel.addAllDevices(model.configuredDeviceList.devices);
-      _callbackSuccess = {
-        for (var value in BodyPositions.values) value: true
-      };
-      _devicesConfigurationCompleted = true;
-    } else {
-      model.deviceList.forEach((device) => {
-        deviceModel = DeviceModel(device.name, device.serial),
-        deviceListModel.addDevice(deviceModel),
-      });
-      _callbackSuccess = {
-        for (var value in BodyPositions.values) value: false
-      };
-      _devicesConfigurationCompleted = false;
+    _callbackSuccess = {
+      for (var value in BodyPositions.values) value: false
+    };
+    print("_model.deviceList.length ${_model.deviceList.length}");
+    _model.deviceList.forEach((device) => {
+      deviceModel = DeviceModel(device.name, device.serial),
+      deviceListModel.addDevice(deviceModel),
+    });
+    _devicesConfigurationCompleted = false;
+
+    if (_model.configuredDeviceList.devices.length > 0) {
+      for (var device in _model.configuredDeviceList.devices) {
+        deviceListModel.removeDevice(device);
+        _callbackSuccess[device.bodyPosition!] = true;
+      }
+        _devicesConfigurationCompleted = true;
     }
     _configurationCompleted = ValueNotifier<bool>(false);
   }
@@ -207,6 +210,27 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
   }
 
 
+  Future<bool?> _showConfigurationIncompleteDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(configIncomplete),
+          actions: <Widget>[
+            TextButton(
+              child: const Text(ok),
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   Future<void> _onPositionButtonPressed(BodyPositions bodyPart) async {
     bool? countDownDialogResult = await _showCountDownDialog(bodyPart);
     if (!countDownDialogResult!) {
@@ -239,8 +263,10 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
               .where((element) => element.serial == device.serial)
               .first;
           selectedDevice.bodyPosition = bodyPart;
+          _model.configuredDeviceList.addDevice(selectedDevice);
           setState(() {
             _callbackSuccess[bodyPart] = true;
+            _devicesConfigurationCompleted = true;
           });
           break;
         } else {
@@ -249,21 +275,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
       }
     }
 
-    // If every other position has been configured, configure chest position by exclusion and complete configuration
-    print("deviceListModel.devices.where((element) => element.bodyPosition != null).length : ${deviceListModel.devices.where((element) => element.bodyPosition != null).length}");
-    print("deviceListModel.devices.length: ${deviceListModel.devices.length}");
-    print("Body part: ${bodyPart.name}");
-    BodyPositions? chestPosition = BodyPositions.values.firstWhereOrNull((element) => element.name == "chest");
-    if (chestPosition != null && deviceListModel.devices.where((element) => element.bodyPosition != null).length == deviceListModel.devices.length - 1) {
-      DeviceModel chestDevice = deviceListModel.devices.where((element) => element.bodyPosition == null).first;
-      chestDevice.bodyPosition = chestPosition;
-      model.configuredDeviceList = deviceListModel;
-      print("Configuration complete");
-      setState(() {
-        _callbackSuccess[chestPosition] = true;
-        _devicesConfigurationCompleted = true;
-      });
-    }
+
 
   }
 
@@ -280,7 +292,8 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
       //   for (var value in BodyPositions.values) value: false
       // };
       setState(() {
-        model.clearConfiguredDevices();
+        _model.clearConfiguredDevices();
+        _devicesConfigurationCompleted = false;
         initDevicesState();
       });
 
@@ -294,8 +307,8 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
     print("_devicesConfigurationCompleted: $_devicesConfigurationCompleted");
     if (userIdFormKey.currentState!.validate() && _devicesConfigurationCompleted) {
       _configurationCompleted.value = true;
-      model.configuredDeviceList.userId = _userIdTextController.text;
-      for (final device in model.configuredDeviceList.devices) {
+      _model.configuredDeviceList.userId = _userIdTextController.text;
+      for (final device in _model.configuredDeviceList.devices) {
         device.userId = _userIdTextController.text;
         device.userAge = _userAgeTextController.text;
         device.userSex = _userSexTextController.text;
@@ -303,6 +316,8 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
         device.userHeight = _userHeightTextController.text;
         device.userWeight = _userWeightTextController.text;
       }
+    } else {
+      _showConfigurationIncompleteDialog();
     }
   }
 
@@ -373,12 +388,13 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
                               ),
                             ),
 
+                            // Configure device buttons
                             for (final bodyPart in BodyPositions.values)
                               Card(
                                 child: ListTile(
                                   title: Text(bodyPart.nameUpperCase),
                                   tileColor: _callbackSuccess[bodyPart]! ? Colors.green : null,
-                                  enabled: !_callbackSuccess[bodyPart]! && !(bodyPart == BodyPositions.chest),
+                                  enabled: _model.configuredDeviceList.devices.length < _model.connectedDeviceList.length && !_callbackSuccess[bodyPart]!,
                                   onTap: () => _onPositionButtonPressed(bodyPart),
                                 ),
                               ),
