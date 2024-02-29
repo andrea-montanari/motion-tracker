@@ -1,10 +1,10 @@
 enum BodyPositions {
   leftWrist,
   rightWrist,
-  leftPocket,
-  rightPocket,
   leftAnkle,
   rightAnkle,
+  leftPocket,
+  rightPocket,
   belt,
   chest,
 }

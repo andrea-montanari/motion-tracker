@@ -10,8 +10,8 @@ import 'package:multi_sensor_collector/Utils/RunningStat.dart';
 import 'Utils/InfoResponse.dart';
 
 class DeviceModel extends ChangeNotifier {
-  static const double MOVEMENT_THRESHOLD = 4.0;
-  int sampleRate = 26;
+  static const double MOVEMENT_THRESHOLD = 8.0;
+  late int sampleRate;
 
   String? _serial;
   String? _name;
@@ -233,9 +233,9 @@ class DeviceModel extends ChangeNotifier {
     print("Subscribe to IMU 9");
     this.activity = activity;
     _imu9Data = Map();
-    print("Subscribing to IMU9. Rate: $sampleRate");
 
     sampleRate = int.parse(rate.toString());
+    print("Subscribing to IMU9. Rate: $sampleRate");
 
     _csvDataImu9 = [];
     _csvDataImu9.add(csvHeaderImu9);
