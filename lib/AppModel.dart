@@ -42,6 +42,7 @@ class AppModel extends ChangeNotifier {
   String get dropdownRateSelHint => "Data rate";
   String get dropdownActivitiesSelHint => "Activity";
   String get hrDataText => "HR:";
+  String get connectedDevicesText => "Connected devices: ";
 
   void onDeviceMdsConnected(void Function(Device) cb) {
     _onDeviceMdsConnectedCb = cb;

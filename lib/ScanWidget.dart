@@ -226,6 +226,11 @@ class _ScanWidgetState extends State<ScanWidget> {
                     onPressed: onScanButtonPressed,
                     child: Text(model.scanButtonText),
                   ),
+
+                  // Connected devices count
+                  Text(model.connectedDevicesText + model.connectedDeviceList.length.toString()),
+
+                  // Active devices
                   _buildDeviceList(model.deviceList),
 
                   // Configure devices button

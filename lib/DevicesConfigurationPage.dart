@@ -31,7 +31,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
   final TextEditingController _userWeightTextController = TextEditingController();
 
   static const String movementDetected = "Movement detected";
-  static const String deviceSelection = "Is the device with the LED the one located on the POSITION_PLACEHOLDER?";
+  static const String deviceSelection = "Is the device with the LED on the one located on the POSITION_PLACEHOLDER?";
   static const String yes = "Yes";
   static const String no = "No";
   static const String ok = "Ok";
