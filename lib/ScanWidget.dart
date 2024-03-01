@@ -42,14 +42,14 @@ class _ScanWidgetState extends State<ScanWidget> {
     model = Provider.of<AppModel>(context, listen: false);
     InfoResponse imuInfo;
     DeviceModel deviceModel;
-    model.onDeviceMdsConnected((device) async => {
-      model.connectedDeviceList.length >= model.DEVICES_TO_CONNECT_NUM ? allDevicesConnected = true : allDevicesConnected = false,
+    model.onDeviceMdsConnected((device) async {
+      model.connectedDeviceList.length >= model.DEVICES_TO_CONNECT_NUM ? allDevicesConnected = true : allDevicesConnected = false;
 
       // Get available sample rates on first connection
       if (sampleRates.isEmpty) {
-        deviceModel = DeviceModel(device.name, device.serial),
-        imuInfo = await deviceModel.getImuInfo(),
-        updateDropdownElements(imuInfo.sampleRates),
+        deviceModel = DeviceModel(device.name, device.serial);
+        imuInfo = await deviceModel.getImuInfo();
+        updateDropdownElements(imuInfo.sampleRates);
       }
     });
 

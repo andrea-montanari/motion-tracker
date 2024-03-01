@@ -4,7 +4,6 @@ import 'package:multi_sensor_collector/UserInfoForm.dart';
 import 'package:multi_sensor_collector/Utils/BodyPositions.dart';
 import 'package:provider/provider.dart';
 import 'package:timer_count_down/timer_count_down.dart';
-import 'package:collection/collection.dart';
 import 'AppModel.dart';
 import 'DeviceListModel.dart';
 import 'DeviceModel.dart';
@@ -63,9 +62,9 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
     _callbackSuccess = {
       for (var value in BodyPositions.values) value: false
     };
-    _model.deviceList.forEach((device) => {
-      deviceModel = DeviceModel(device.name, device.serial),
-      deviceListModel.addDevice(deviceModel),
+    _model.deviceList.forEach((device) {
+      deviceModel = DeviceModel(device.name, device.serial);
+      deviceListModel.addDevice(deviceModel);
     });
     _devicesConfigurationCompleted = false;
 
@@ -244,7 +243,6 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
       deviceListModel.unsubscribeAllDevicesToAccelerometer();
       return;
     }
-    List<DeviceModel>? devicesSortedByMovement = await devicesSortedByMovementFuture;
     context.mounted ? Navigator.pop(context) : null;
 
     // Show the device that registered the most movement and make the user chose if it's the correct one
