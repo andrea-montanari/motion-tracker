@@ -30,7 +30,7 @@ class _ScanWidgetState extends State<ScanWidget> {
   bool hrActive = false;
   String hrData = "";
 
-  static const String appBarTitle = "Multi Sensor Collector";
+  static const String appBarTitle = "Motion Tracker";
   static const String devicesSynchronization = "Devices synchronization...";
   static const String synchronizationFailed = "Devices synchronization failed, try again.";
   static const String ok = "Ok";
