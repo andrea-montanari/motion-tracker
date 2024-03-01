@@ -24,7 +24,17 @@ if (flutterVersionName == null) {
 
 // Load properties from key.properties
 def keyProperties = new Properties()
-keyProperties.load(new FileInputStream(rootProject.file("key.properties")))
+def keyPropertiesFile = rootProject.file('key.properties')
+if (keyPropertiesFile.exists()) {
+    keyPropertiesFile.withReader('UTF-8') { reader ->
+        keyProperties.load(reader)
+    }
+}
+def keypropStoreFile = keyProperties.getProperty('storeFile')
+def keypropStorePassword = keyProperties.getProperty('storePassword')
+def keypropKeyAlias = keyProperties.getProperty('keyAlias')
+def keypropKeyPassword = keyProperties.getProperty('keyPassword')
+
 
 android {
     namespace "me.andrea.multi_sensor_collector"
@@ -60,18 +70,20 @@ android {
 
     signingConfigs {
         release {
-            storeFile file(keyProperties.getProperty("storeFile"))
-            storePassword keyProperties.getProperty("storePassword")
-            keyAlias keyProperties.getProperty("keyAlias")
-            keyPassword keyProperties.getProperty("secretsProperties.getProperty")
+            storeFile file(keypropStoreFile)
+            storePassword keypropStorePassword
+            keyAlias keypropKeyAlias
+            keyPassword keypropKeyPassword
 
-            v1SigningEnabled keyProperties.getProperty("v1SigningEnabled")
-            v2SigningEnabled keyProperties.getProperty("v2SigningEnabled")
+            // Optional, specify signing versions used
+            v1SigningEnabled true
+            v2SigningEnabled true
         }
     }
 
     buildTypes {
         release {
+            buildConfigField "String", "MDS_VERSION", "\"1.68.0\""
             signingConfig signingConfigs.release
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
