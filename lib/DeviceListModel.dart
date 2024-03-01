@@ -52,7 +52,6 @@ class DeviceListModel extends ChangeNotifier {
       if (device.bodyPosition == null) {
         device.subscribeToAccelerometerCheckForMovement(
             onMovementDetected: () async => {
-              print("Device ${device.serial} moved."),
               await unsubscribeAllDevicesToAccelerometer(),
               completer.complete(),
             }
@@ -112,12 +111,10 @@ class DeviceListModel extends ChangeNotifier {
   }
 
   Future<void> writeImuDataToCsvFile(DeviceModel device) async {
-    print("Writing data to csv file");
+    debugPrint("Writing data to csv file");
     String csvDirectoryImu9 = await createExternalDirectory();
-    print("Directory: $csvDirectoryImu9");
     List<List<String>> csvDataImu9 = device.csvDataImu9;
     String csvData = const ListToCsvConverter().convert(csvDataImu9);
-    print("Csv data: $csvData");
     String partialSerial = device.serial!.substring(device.serial!.length - 4);
     String path = "$csvDirectoryImu9/User${userId}_${currentActivity}_${_nowFormatted}_IMU9Data-$partialSerial.csv";
     final File file = await File(path).create(recursive: true);
@@ -126,16 +123,13 @@ class DeviceListModel extends ChangeNotifier {
       await Permission.storage.request();
     }
     await file.writeAsString(csvData);
-    print("File written");
+    debugPrint("File written");
   }
 
   Future<void> writeHrDataToCsvFile(DeviceModel device) async {
-    print("Writing hr data to csv file");
     String csvDirectoryHr = await createExternalDirectory();
-    print("Directory Hr: $csvDirectoryHr");
     List<List<String>> csvDataHr = device.csvDataHr;
     String csvData = const ListToCsvConverter().convert(csvDataHr);
-    print("Csv data hr: $csvData");
     String partialSerial = device.serial!.substring(
         device.serial!.length - 4);
     String path = "$csvDirectoryHr/${userId}_${_nowFormatted}_HrData-$partialSerial.csv";
@@ -156,10 +150,10 @@ class DeviceListModel extends ChangeNotifier {
     }
     if (dir != null) {
       if ((await dir.exists())) {
-        print("Dir exists, path: ${dir.path}");
+        debugPrint("Dir exists, path: ${dir.path}");
         return dir.path;
       } else {
-        print("Dir doesn't exist, creating...");
+        debugPrint("Dir doesn't exist, creating...");
         dir.create();
         return dir.path;
       }

@@ -63,7 +63,6 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
     _callbackSuccess = {
       for (var value in BodyPositions.values) value: false
     };
-    print("_model.deviceList.length ${_model.deviceList.length}");
     _model.deviceList.forEach((device) => {
       deviceModel = DeviceModel(device.name, device.serial),
       deviceListModel.addDevice(deviceModel),
@@ -246,11 +245,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
       return;
     }
     List<DeviceModel>? devicesSortedByMovement = await devicesSortedByMovementFuture;
-    print("Movement detected");
     context.mounted ? Navigator.pop(context) : null;
-    // deviceListModel.addAllDevices(devicesSortedByMovement!);
-    print("Devices sorted b movement: ${devicesSortedByMovement!.length}");
-    print("deviceListModel length: ${deviceListModel.devices.length}");
 
     // Show the device that registered the most movement and make the user chose if it's the correct one
     for (final device in deviceListModel.devices) {
@@ -303,8 +298,6 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
 
   void _onSubmitConfigButtonPressed() {
     // Validate returns true if the form is valid, or false otherwise.
-    print("SubmitConfigButton pressed");
-    print("_devicesConfigurationCompleted: $_devicesConfigurationCompleted");
     if (userIdFormKey.currentState!.validate() && _devicesConfigurationCompleted) {
       _configurationCompleted.value = true;
       _model.configuredDeviceList.userId = _userIdTextController.text;
@@ -312,7 +305,6 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
         device.userId = _userIdTextController.text;
         device.userAge = _userAgeTextController.text;
         device.userSex = _userSexTextController.text;
-        print("User sex: ${_userSexTextController.text}");
         device.userHeight = _userHeightTextController.text;
         device.userWeight = _userWeightTextController.text;
       }
@@ -325,9 +317,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
   Widget build(BuildContext context) {
     // Listen to changes in the state variable inside the build method
     _configurationCompleted.addListener(() {
-      print(" -- -- Configuration completed listener called");
       if (_configurationCompleted.value == true) {
-        print(" -- -- Configuration completed true");
         // Show a snackbar when the state variable changes to true
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ScaffoldMessenger.of(context).showSnackBar(

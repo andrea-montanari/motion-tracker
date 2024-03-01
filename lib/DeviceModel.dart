@@ -106,12 +106,11 @@ class DeviceModel extends ChangeNotifier {
         "{\"value\":${DateTime.now().microsecondsSinceEpoch+localTimeOffset}}",
             (data, statusCode) {
           /* onSuccess */
-          print("Time set for sensor $_serial. Data: $data");
           completer.complete(true);
         },
             (error, statusCode) {
           /* onError */
-          print("Error on time set for sensor $_serial");
+          debugPrint("Error on time set for sensor $_serial");
           completer.complete(false);
         }
     );
@@ -125,7 +124,6 @@ class DeviceModel extends ChangeNotifier {
         "{}",
             (data, statusCode) {
           /* onSuccess */
-          print("Time detailed for sensor $_serial. Data: $data");
           Map timeDetailedData = jsonDecode(data);
           timeDetailed["utc"] = timeDetailedData["Content"]["utcTime"];
           timeDetailed["relativeTime"] = timeDetailedData["Content"]["relativeTime"];
@@ -133,7 +131,7 @@ class DeviceModel extends ChangeNotifier {
         },
             (error, statusCode) {
           /* onError */
-          print("Error on get time detailed for sensor $_serial");
+              debugPrint("Error on get time detailed for sensor $_serial");
           completer.complete(null);
         }
     );
@@ -166,7 +164,6 @@ class DeviceModel extends ChangeNotifier {
   }
 
   void subscribeToAccelerometerCheckForMovement({required Function onMovementDetected}) {
-    print("Subscribe to accelerometer");
     _accelerometerData = Map();
     runningStatX.clear();
     runningStatY.clear();
@@ -217,7 +214,6 @@ class DeviceModel extends ChangeNotifier {
         "{}",
             (data, statusCode) {
           /* onSuccess */
-          print("IMU info: $data");
           imuInfoResponse = InfoResponse(data);
           completer.complete(imuInfoResponse);
         },
@@ -230,12 +226,11 @@ class DeviceModel extends ChangeNotifier {
   }
 
   Future<void> subscribeToIMU9(var rate, String activity) async {
-    print("Subscribe to IMU 9");
     this.activity = activity;
     _imu9Data = Map();
 
     sampleRate = int.parse(rate.toString());
-    print("Subscribing to IMU9. Rate: $sampleRate");
+    debugPrint("Subscribing to IMU9. Rate: $sampleRate");
 
     _csvDataImu9 = [];
     _csvDataImu9.add(csvHeaderImu9);
@@ -245,7 +240,7 @@ class DeviceModel extends ChangeNotifier {
     _imu9Subscription = MdsAsync.subscribe(
         Mds.createSubscriptionUri(_serial!, "/Meas/IMU9/$rate"), "{}")
         .handleError((error) {
-      print("Error: " + error.toString());
+      debugPrint("Error: " + error.toString());
     })
         .listen((event) {
       _onNewIMU9Data(event);
@@ -303,8 +298,6 @@ class DeviceModel extends ChangeNotifier {
     _csvDataImu9[1].add(timeDetailedStart["relativeTime"].toString());
     _csvDataImu9[2].add(timeDetailedEnd["utc"].toString());
     _csvDataImu9[2].add(timeDetailedEnd["relativeTime"].toString());
-    print("-- first row csv: ${_csvDataImu9[1]}");
-    print("-- second row csv: ${_csvDataImu9[2]}");
 
     notifyListeners();
   }
@@ -315,7 +308,6 @@ class DeviceModel extends ChangeNotifier {
         "{}",
             (data, statusCode) {
           /* onSuccess */
-          print("ECG Config: $data");
           imuInfoResponse = InfoResponse(data);
         },
             (error, statusCode) {
@@ -327,7 +319,6 @@ class DeviceModel extends ChangeNotifier {
   void subscribeToHr() {
     if (_onHrStart != null) {
       _onHrStart!.call();
-      print("_onHrStart");
     }
     _hrData = "";
 
@@ -356,8 +347,6 @@ class DeviceModel extends ChangeNotifier {
     ];
     _csvDataHr.add(csvRow);
 
-    print("--- HR:\n\tTimestamp: ${body["Timestamp"]}\n\tData: ${body["average"]}");
-    print('_onNewHrData() executed in ${stopwatch.elapsedMilliseconds - previousTimestamp}');
     previousTimestamp = stopwatch.elapsedMilliseconds;
     if (_onHrDataReceived != null) {
       _onHrDataReceived!.call(this);
