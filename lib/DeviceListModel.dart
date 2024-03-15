@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:multi_sensor_collector/Utils/BodyPositions.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'DeviceModel.dart';
 import 'package:path_provider/path_provider.dart';
@@ -57,6 +59,27 @@ class DeviceListModel extends ChangeNotifier {
         );
       }
     }
+    notifyListeners();
+    return completer.future;
+  }
+
+  Future<void> subscribeDevicesToAccelerometerCheckForMovementForAnimation() async {
+    var channel = MethodChannel("me.andrea.motion_tracker/native");
+    Completer completer = Completer();
+    for (final device in devices) {
+      if (device.bodyPosition == BodyPositions.leftAnkle ||
+          device.bodyPosition == BodyPositions.rightAnkle) {
+        device.subscribeToAccelerometerCheckForMovementForAnimation(
+            onMovementDetected: () async => {
+              channel.invokeMethod("activateAnimation", {'animationName': device.bodyPosition!.name}),
+              print("Movement detected from ${device.bodyPosition.toString()}"),
+              // await unsubscribeAllDevicesToAccelerometer(),
+              completer.complete(),
+            }
+        );
+      }
+    }
+    // completer.complete();
     notifyListeners();
     return completer.future;
   }

@@ -36,7 +36,8 @@
         <activity
             android:name=".HumanoidAnimationActivity"
             android:exported="true"
-            android:theme="@style/LaunchThemeAppCompat">
+            android:theme="@style/LaunchThemeAppCompat"
+            android:launchMode="singleTop">
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

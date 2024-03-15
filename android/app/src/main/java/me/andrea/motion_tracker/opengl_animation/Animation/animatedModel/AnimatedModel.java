@@ -87,6 +87,10 @@ public class AnimatedModel {
 		return model;
 	}
 
+	public boolean isAnimating() {
+		return animating;
+	}
+
 	/**
 	 * @return The diffuse texture for this entity.
 	 */

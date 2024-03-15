@@ -11,6 +11,7 @@ import 'Utils/InfoResponse.dart';
 
 class DeviceModel extends ChangeNotifier {
   static const double MOVEMENT_THRESHOLD = 8.0;
+  static const double MOVEMENT_THRESHOLD_ANIMATION = 4.0;
   late int sampleRate;
 
   String? _serial;
@@ -195,6 +196,47 @@ class DeviceModel extends ChangeNotifier {
     stdSum = runningStatX.maxStd() + runningStatY.maxStd() + runningStatZ.maxStd();
     if (stdSum > MOVEMENT_THRESHOLD) {
       onMovementDetected();
+    }
+    notifyListeners();
+  }
+
+  void subscribeToAccelerometerCheckForMovementForAnimation({required Function onMovementDetected}) {
+    _accelerometerData = Map();
+    runningStatX.clear();
+    runningStatY.clear();
+    runningStatZ.clear();
+    stdSum = 0.0;
+
+    _accSubscription = MdsAsync.subscribe(
+        Mds.createSubscriptionUri(_serial!, "/Meas/Acc/13"), "{}")
+        .handleError((error) => {
+      debugPrint("Error on subscribeToAccelerometerCheckForMovement: $error")
+    })
+        .listen((event) {
+      _onNewAccelerometerDataCheckMovementForAnimation(event, onMovementDetected);
+    });
+
+    notifyListeners();
+  }
+
+  void _onNewAccelerometerDataCheckMovementForAnimation(dynamic accData, Function onMovementDetected) {
+    Map<String, dynamic> body = accData["Body"];
+    List<dynamic> accArray = body["ArrayAcc"];
+    dynamic acc = accArray.last;
+    _accelerometerData["x"] = acc["x"].toDouble();
+    _accelerometerData["y"] = acc["y"].toDouble();
+    _accelerometerData["z"] = acc["z"].toDouble();
+    runningStatX.push(_accelerometerData["x"]!);
+    runningStatY.push(_accelerometerData["y"]!);
+    runningStatZ.push(_accelerometerData["z"]!);
+    stdSum = runningStatX.maxStd() + runningStatY.maxStd() + runningStatZ.maxStd();
+    if (stdSum > MOVEMENT_THRESHOLD_ANIMATION) {
+      onMovementDetected();
+      _accelerometerData = Map();
+      runningStatX.clear();
+      runningStatY.clear();
+      runningStatZ.clear();
+      stdSum = 0.0;
     }
     notifyListeners();
   }

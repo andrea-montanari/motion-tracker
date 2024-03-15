@@ -208,10 +208,11 @@ class _ScanWidgetState extends State<ScanWidget> {
     return;
   }
 
-  var channel = MethodChannel("motion_tracker_channel");
+  var channel = MethodChannel("me.andrea.motion_tracker/native");
   Future<void> onAnimatedModelButtonPressed() async {
     try {
       channel.invokeMethod("launchHumanoidAnimation");
+      model.configuredDeviceList.subscribeDevicesToAccelerometerCheckForMovementForAnimation();
     } on PlatformException catch (e) {
       print("Failed to launch native activity (HumanoidAnimation): '${e.message}'.");
     }

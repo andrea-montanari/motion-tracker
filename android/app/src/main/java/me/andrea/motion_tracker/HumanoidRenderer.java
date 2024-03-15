@@ -103,7 +103,7 @@ public class HumanoidRenderer extends BasicRenderer {
 
     private AnimatedModelData humanoidModel;
     private AnimatedModel humanoidAnimatedModel;
-    private Animation animation;
+    private Animation animationRightLeg;
     private Animation animationLeftLeg;
     private boolean animate;
 
@@ -117,7 +117,7 @@ public class HumanoidRenderer extends BasicRenderer {
         projM = new float[16];
         MVP = new float[16];
         temp = new float[16];
-        eyePos = new float[]{0f,0f,38f};
+        eyePos = new float[]{0f,0f,45f};
         lightPos = new float[]{0f,800f,200f};
         inverseModel = new float[16];
         jointTransforms = new float[MAX_JOINTS][16];
@@ -191,11 +191,8 @@ public class HumanoidRenderer extends BasicRenderer {
             Log.v(TAG, "ColladaLoader.loadColladaModel(): ");
             humanoidModel = ColladaLoader.loadColladaModel("humanoid_rigged.dae", GeneralSettings.MAX_WEIGHTS, context);
             // Load animation data
-            animation = AnimationLoader.loadAnimation("humanoid_rigged.dae", context);
-            animationLeftLeg = AnimationLoader.loadAnimation("humanoid_from_sketchfab_rigged_anim_left_leg.dae", context);
-//            for (KeyFrameData keyFrameData: animationData.keyFrames) {
-//                Log.v(TAG, "Keyframe time: " + keyFrameData.time);
-//            }
+            animationRightLeg = AnimationLoader.loadAnimation("humanoid_anim_right_leg.dae", context);
+            animationLeftLeg = AnimationLoader.loadAnimation("humanoid_anim_left_leg.dae", context);
         } catch (Exception ex) {
             Log.e(TAG, "Error in Collada file loading: " + ex);
         }
@@ -242,7 +239,6 @@ public class HumanoidRenderer extends BasicRenderer {
 
         vao = new Vao();
         vao.bind();
-//        VAO = new int[1];
 
         glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
         glBufferData(GL_ARRAY_BUFFER, Float.BYTES * vertexData.capacity(),
@@ -290,7 +286,6 @@ public class HumanoidRenderer extends BasicRenderer {
                 skeletonData.jointCount
         );
         Log.v(TAG, "Keyframes length: " + animationLeftLeg.getKeyFrames().length);
-        humanoidAnimatedModel.doAnimation(animationLeftLeg);
         jointTransforms = humanoidAnimatedModel.getJointTransforms();
 
 
@@ -307,15 +302,19 @@ public class HumanoidRenderer extends BasicRenderer {
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
 
-        this.getSurface().setOnTouchListener((view, motionEvent) -> {
-            animate = !animate;
-            if (animate) {
-                humanoidAnimatedModel.doAnimation(animationLeftLeg);
-            } else {
-                humanoidAnimatedModel.doAnimation(animation);
+    }
+
+    public void activateAnimation(String animationName) {
+        if (!humanoidAnimatedModel.isAnimating()) {
+            switch (animationName) {
+                case "left ankle":
+                    humanoidAnimatedModel.doAnimation(animationLeftLeg);
+                    break;
+                case "right ankle":
+                    humanoidAnimatedModel.doAnimation(animationRightLeg);
+                    break;
             }
-            return false;
-        });
+        }
     }
 
     @Override

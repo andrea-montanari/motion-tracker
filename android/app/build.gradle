@@ -97,6 +97,8 @@ flutter {
 
 dependencies {
     def appcompat_version = "1.6.1"
+    def activity_ktx_version = "1.8.2"
 
     implementation "androidx.appcompat:appcompat:$appcompat_version"
+    implementation "androidx.activity:activity-ktx:$appcompat_version"
 }
