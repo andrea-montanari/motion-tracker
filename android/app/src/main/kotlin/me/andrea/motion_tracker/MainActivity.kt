@@ -1,6 +1,7 @@
-package me.andrea.multi_sensor_collector
+package me.andrea.motion_tracker
 
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity: FlutterActivity() {
+
 }

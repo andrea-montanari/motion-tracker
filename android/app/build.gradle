@@ -37,7 +37,7 @@ def keypropKeyPassword = keyProperties.getProperty('keyPassword')
 
 
 android {
-    namespace "me.andrea.multi_sensor_collector"
+    namespace "me.andrea.motion_tracker"
     compileSdkVersion 33
     ndkVersion flutter.ndkVersion
 
@@ -59,10 +59,10 @@ android {
     }
 
     defaultConfig {
-        applicationId "me.andrea.multi_sensor_collector"
+        applicationId "me.andrea.motion_tracker"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion 21
+        minSdkVersion 26
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -95,4 +95,8 @@ flutter {
     source '../..'
 }
 
-dependencies {}
+dependencies {
+    def appcompat_version = "1.6.1"
+
+    implementation "androidx.appcompat:appcompat:$appcompat_version"
+}
