@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:multi_sensor_collector/Device.dart';
 import 'package:multi_sensor_collector/DeviceConnectionStatus.dart';
 import 'package:multi_sensor_collector/AppModel.dart';
@@ -34,6 +35,7 @@ class _ScanWidgetState extends State<ScanWidget> {
   static const String devicesSynchronization = "Devices synchronization...";
   static const String synchronizationFailed = "Devices synchronization failed, try again.";
   static const String ok = "Ok";
+  static const String animatedHumanoidBtn = "Animated Model";
 
   @override
   void initState() {
@@ -206,6 +208,15 @@ class _ScanWidgetState extends State<ScanWidget> {
     return;
   }
 
+  var channel = MethodChannel("motion_tracker_channel");
+  Future<void> onAnimatedModelButtonPressed() async {
+    try {
+      channel.invokeMethod("launchHumanoidAnimation");
+    } on PlatformException catch (e) {
+      print("Failed to launch native activity (HumanoidAnimation): '${e.message}'.");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -235,6 +246,17 @@ class _ScanWidgetState extends State<ScanWidget> {
                     onPressed: allDevicesConnected ? onConfigButtonPressed : null,
                     child: Text(model.configButtonText),
                   ),
+
+
+                  // Humanoid Animation button
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: onAnimatedModelButtonPressed,
+                      child: const Text(animatedHumanoidBtn),
+                    ),
+                  ),
+
+
                   Stack(
                     children: [
 
@@ -249,6 +271,7 @@ class _ScanWidgetState extends State<ScanWidget> {
                           child: recording ? Text(model.stopRecordingButtonText) : Text(model.startRecordingButtonText),
                         ),
                       ),
+
 
                       // Sample rates dropdown
                       if (sampleRates.isNotEmpty) Column(
