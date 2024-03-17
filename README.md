@@ -16,6 +16,6 @@ The allowed positions are:
 
 ## Animation
 
-To make the application more interactive, an animated model that reflects the movements of the user has bees added.
+To make the application more interactive, an animated model that reflects the movements of the user has bees added. It is implemented in OpenGLES and it makes use of a library modified from [TheThinMatrix's OpenGL-Animation](https://github.com/TheThinMatrix/OpenGL-Animation).
 
 It currently only shows leg movement corresponding to the sensors positioned on the ankles.
