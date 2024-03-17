@@ -11,7 +11,7 @@ import 'Utils/InfoResponse.dart';
 
 class DeviceModel extends ChangeNotifier {
   static const double MOVEMENT_THRESHOLD = 8.0;
-  static const double MOVEMENT_THRESHOLD_ANIMATION = 4.0;
+  static const double MOVEMENT_THRESHOLD_ANIMATION = 5.0;
   late int sampleRate;
 
   String? _serial;

@@ -18,7 +18,6 @@ public class HumanoidAnimationActivity extends AppCompatActivity {
 
     private static String TAG;
     private GLSurfaceView surface;
-    private boolean isSurfaceCreated;
     private HumanoidRenderer renderer;
 
     @Override
@@ -45,17 +44,12 @@ public class HumanoidAnimationActivity extends AppCompatActivity {
         surface = new GLSurfaceView(this);
         surface.setEGLContextClientVersion(supported);
         surface.setPreserveEGLContextOnPause(true);
-//        GLSurfaceView.Renderer renderer = new BasicRenderer(1,0,0);
-//        GLSurfaceView.Renderer renderer = new ScissorRenderer();
-//        GLSurfaceView.Renderer renderer = new VBOVAORenderer();
         renderer = new HumanoidRenderer();
 
-        setContentView(surface);
+
         ((BasicRenderer) renderer).setContextAndSurface(this, surface);
         surface.setRenderer(renderer);
-        isSurfaceCreated = true;
-
-//        setContentView(R.layout.activity_main);
+        setContentView(surface);
 
     }
 

@@ -38,9 +38,7 @@ import static android.opengl.GLES30.glVertexAttribIPointer;
 import static me.andrea.motion_tracker.opengl_animation.Animation.loaders.AnimatedModelLoader.createJoints;
 
 import android.annotation.SuppressLint;
-import android.opengl.GLES30;
 import android.opengl.Matrix;
-import android.os.Build;
 import android.util.Log;
 
 import me.andrea.motion_tracker.opengl_animation.Animation.animatedModel.AnimatedModel;
@@ -50,18 +48,14 @@ import me.andrea.motion_tracker.opengl_animation.Animation.loaders.AnimationLoad
 import me.andrea.motion_tracker.opengl_animation.ColladaParser.colladaLoader.ColladaLoader;
 import me.andrea.motion_tracker.opengl_animation.ColladaParser.dataStructures.AnimatedModelData;
 import me.andrea.motion_tracker.opengl_animation.ColladaParser.dataStructures.SkeletonData;
-import me.andrea.motion_tracker.opengl_animation.main.GeneralSettings;
+import me.andrea.motion_tracker.utils.GeneralSettings;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -74,18 +68,13 @@ public class HumanoidRenderer extends BasicRenderer {
     private int MAX_JOINTS = 50;
 
     private static String TAG;
-    private int VAO[];
     private Vao vao;
     private int VBO[];
     private int shaderHandle;
     private int MVPloc;
-    private int umodelM;
     private int uJointTransforms;
-    private int uProjectionViewMatrix;
 
-    private static final boolean USE_VAO = true;
     private int countFacesToElement;
-    private float angle;
 
     private float[] viewM;
     private float[] modelM;
@@ -94,7 +83,7 @@ public class HumanoidRenderer extends BasicRenderer {
     private float[] lightPos;
     private int uLightPos;
     private int uInverseModel;
-    private float[][] jointTransforms = null;
+    private float[][] jointTransforms;
     private float[] eyePos;
     private int uEyePos;
 
@@ -106,7 +95,6 @@ public class HumanoidRenderer extends BasicRenderer {
     private AnimatedModel humanoidAnimatedModel;
     private Animation animationRightLeg;
     private Animation animationLeftLeg;
-    private boolean animate;
 
 
     public HumanoidRenderer() {
@@ -158,8 +146,8 @@ public class HumanoidRenderer extends BasicRenderer {
         InputStream isF;
 
         try {
-            isV = context.getAssets().open("humanWithLight_vs.glsl");
-            isF = context.getAssets().open("humanWithLight_fs.glsl");
+            isV = context.getAssets().open(GeneralSettings.VERTEX_SHADER);
+            isF = context.getAssets().open(GeneralSettings.FRAGMENT_SHADER);
             shaderHandle = ShaderCompiler.createProgram(isV, isF);
         } catch (IOException e) {
             e.printStackTrace();
@@ -169,14 +157,12 @@ public class HumanoidRenderer extends BasicRenderer {
         if (shaderHandle == -1)
             System.exit(-1);
 
-
-
-        humanoidModel = null;
         try {
-            humanoidModel = ColladaLoader.loadColladaModel("humanoid_rigged.dae", GeneralSettings.MAX_WEIGHTS, context);
+            // Load humanoid model
+            humanoidModel = ColladaLoader.loadColladaModel(GeneralSettings.MODEL_FILE, GeneralSettings.MAX_WEIGHTS, context);
             // Load animation data
-            animationRightLeg = AnimationLoader.loadAnimation("humanoid_anim_right_leg.dae", context);
-            animationLeftLeg = AnimationLoader.loadAnimation("humanoid_anim_left_leg.dae", context);
+            animationRightLeg = AnimationLoader.loadAnimation(GeneralSettings.ANIM_RIGHT_LEG_FILE, context);
+            animationLeftLeg = AnimationLoader.loadAnimation(GeneralSettings.ANIM_LEFT_LEG_FILE, context);
         } catch (Exception ex) {
             Log.e(TAG, "Error in Collada file loading: " + ex);
         }
@@ -189,6 +175,7 @@ public class HumanoidRenderer extends BasicRenderer {
         indexData.position(0);
         countFacesToElement = indexData.capacity();
 
+        // Set
         float[] colors = new float[humanoidModel.getMeshData().getVertices().length];
         for (int i=0; i<humanoidModel.getMeshData().getVertices().length; i++) {
             colors[i] = 0.0f;
@@ -201,14 +188,11 @@ public class HumanoidRenderer extends BasicRenderer {
         FloatBuffer vertexWeights = allocFloatBuffer(humanoidModel.getMeshData().getVertexWeights());
 
         MVPloc = glGetUniformLocation(shaderHandle, "MVP");
-        umodelM = glGetUniformLocation(shaderHandle, "modelMatrix");
         uInverseModel = glGetUniformLocation(shaderHandle,"inverseModel");
         uLightPos = glGetUniformLocation(shaderHandle,"lightPos");
         uEyePos = glGetUniformLocation(shaderHandle,"eyePos");
         uJointTransforms = glGetUniformLocation(shaderHandle,"jointTransforms");
-        uProjectionViewMatrix = glGetUniformLocation(shaderHandle,"projectionViewMatrix");
 
-        int[] vertices2 = humanoidModel.getMeshData().getJointIds();
 
         VBO = new int[6];
         glGenBuffers(6, VBO, 0);
