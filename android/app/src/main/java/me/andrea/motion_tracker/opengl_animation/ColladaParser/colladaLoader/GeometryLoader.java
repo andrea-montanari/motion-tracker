@@ -109,10 +109,8 @@ public class GeometryLoader {
 	}
 	
 	private void assembleVertices(XmlNode triangle){
-		Log.v("Geometry loader", "Triangles for: " + triangle.getAttribute("material"));
 		int typeCount = triangle.getChildren("input").size();
 		String[] indexData = triangle.getChild("p").getData().split(" ");
-		Log.v("Geometry loader", "Read vertices");
 		for(int i=0;i<indexData.length/typeCount;i++){
 			int positionIndex = Integer.parseInt(indexData[i * typeCount]);
 			int normalIndex = Integer.parseInt(indexData[i * typeCount + 1]);

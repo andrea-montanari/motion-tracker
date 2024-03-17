@@ -68,6 +68,8 @@ import javax.microedition.khronos.opengles.GL10;
 
 
 public class HumanoidRenderer extends BasicRenderer {
+    private boolean UNBIND_VAO = false;
+    private boolean UNBIND_PROGRAM = false;
 
     private int MAX_JOINTS = 50;
 
@@ -93,7 +95,6 @@ public class HumanoidRenderer extends BasicRenderer {
     private int uLightPos;
     private int uInverseModel;
     private float[][] jointTransforms = null;
-    private float[] projectionViewMatrix;
     private float[] eyePos;
     private int uEyePos;
 
@@ -118,10 +119,9 @@ public class HumanoidRenderer extends BasicRenderer {
         MVP = new float[16];
         temp = new float[16];
         eyePos = new float[]{0f,0f,45f};
-        lightPos = new float[]{0f,800f,200f};
+        lightPos = new float[]{0f,15f,20f};
         inverseModel = new float[16];
         jointTransforms = new float[MAX_JOINTS][16];
-        projectionViewMatrix = new float[16];
         Matrix.setIdentityM(inverseModel, 0);
         Matrix.setIdentityM(viewM, 0);
         Matrix.setIdentityM(modelM, 0);
@@ -154,8 +154,8 @@ public class HumanoidRenderer extends BasicRenderer {
     public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
 
         super.onSurfaceCreated(gl10, eglConfig);
-        InputStream isV = null;
-        InputStream isF = null;
+        InputStream isV;
+        InputStream isF;
 
         try {
             isV = context.getAssets().open("humanWithLight_vs.glsl");
@@ -169,26 +169,10 @@ public class HumanoidRenderer extends BasicRenderer {
         if (shaderHandle == -1)
             System.exit(-1);
 
-        InputStream is;
-        float[] vertices= null;
-        List<Integer> indicesList = new ArrayList<Integer>();
-        URI modelUri = null;
-        try {
-            is = context.getAssets().open("human.ply");
-            modelUri = new URI("humanoid_rigged.dae");
-            Log.v(TAG, "modelUri: " + modelUri);
-            PlyObject po = new PlyObject(is);
-            po.parse();
-            vertices = po.getVertices();
-//            indices = po.getIndices();
 
-        }catch(RuntimeException | URISyntaxException | IOException e) {
-            e.printStackTrace();
-        }
 
         humanoidModel = null;
         try {
-            Log.v(TAG, "ColladaLoader.loadColladaModel(): ");
             humanoidModel = ColladaLoader.loadColladaModel("humanoid_rigged.dae", GeneralSettings.MAX_WEIGHTS, context);
             // Load animation data
             animationRightLeg = AnimationLoader.loadAnimation("humanoid_anim_right_leg.dae", context);
@@ -216,11 +200,6 @@ public class HumanoidRenderer extends BasicRenderer {
         IntBuffer jointIds = allocIntBuffer(humanoidModel.getMeshData().getJointIds());
         FloatBuffer vertexWeights = allocFloatBuffer(humanoidModel.getMeshData().getVertexWeights());
 
-//        Log.v(TAG, "color capacity: " + colorData.capacity());
-//        Log.v(TAG, "vertex capacity: " + vertexData.capacity());
-//        Log.v(TAG, "normals capacity: " + normalsData.capacity());
-//        Log.v(TAG, "indices capacity: " + indexData.capacity());
-
         MVPloc = glGetUniformLocation(shaderHandle, "MVP");
         umodelM = glGetUniformLocation(shaderHandle, "modelMatrix");
         uInverseModel = glGetUniformLocation(shaderHandle,"inverseModel");
@@ -230,9 +209,6 @@ public class HumanoidRenderer extends BasicRenderer {
         uProjectionViewMatrix = glGetUniformLocation(shaderHandle,"projectionViewMatrix");
 
         int[] vertices2 = humanoidModel.getMeshData().getJointIds();
-        for (int i = 0; i < vertices2.length; i++) {
-            Log.v("JointIds", "Join ids: " + vertices2[i] + " ");
-        }
 
         VBO = new int[6];
         glGenBuffers(6, VBO, 0);
@@ -274,7 +250,8 @@ public class HumanoidRenderer extends BasicRenderer {
         glVertexAttribPointer(5, 3, GL_FLOAT, false, 3*Float.BYTES, 0);
         glEnableVertexAttribArray(5);
 
-        GLES30.glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER,0);
+        vao.unbind();
 
 
         // Create Animated Model
@@ -285,7 +262,6 @@ public class HumanoidRenderer extends BasicRenderer {
                 headJoint,
                 skeletonData.jointCount
         );
-        Log.v(TAG, "Keyframes length: " + animationLeftLeg.getKeyFrames().length);
         jointTransforms = humanoidAnimatedModel.getJointTransforms();
 
 
@@ -327,56 +303,48 @@ public class HumanoidRenderer extends BasicRenderer {
         Matrix.setLookAtM(viewM, 0, eyePos[0], eyePos[1], eyePos[2],
                 0, 0, 0,
                 0, 1, 0);
+
+        // World/Model Space
+        Matrix.translateM(modelM, 0, 0, -1, 0);
+        Matrix.multiplyMM(temp, 0, projM, 0, viewM, 0);
+        Matrix.multiplyMM(MVP, 0, temp, 0, modelM, 0);
+
+        // Lighting
+        Matrix.invertM(inverseModel, 0,modelM,0);
     }
 
     @Override
     public void onDrawFrame(GL10 gl10) {
+        glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glUseProgram(shaderHandle);
-
-
         vao.bind();
+
         humanoidAnimatedModel.update();
 
-        // World/Model Space
-        angle += 1f;
-        Matrix.setIdentityM(modelM, 0);
-//        Matrix.scaleM(modelM, 0, -3, -3, -3);
-        Matrix.translateM(modelM, 0, 0, -1, 0);
-//        Matrix.rotateM(modelM, 0, -90, 1, 0, 0);
-//        Matrix.rotateM(modelM, 0, 30, 0, 0, 1);
-//        Matrix.rotateM(modelM, 0, angle, 0, 0.5f, 0);
-        Matrix.multiplyMM(temp, 0, projM, 0, viewM, 0);
-        Matrix.multiplyMM(MVP, 0, temp, 0, modelM, 0);
+        // Send MVP and lighting transformations
+        glUniformMatrix4fv(MVPloc, 1, false, MVP, 0);
+        glUniformMatrix4fv(uInverseModel,1,true,inverseModel,0);
 
-        // Send model matrices
-        glUniformMatrix4fv(umodelM,1,false,modelM,0);
+        // Retrieve and send joint transformations for animation
         jointTransforms = humanoidAnimatedModel.getJointTransforms();
         int jointsNumber = humanoidModel.getJointsData().jointCount;
         float[] flattenedArray = new float[jointsNumber * 16]; // Assuming each transform is 4x4 matrix
         for (int i = 0; i < jointsNumber; i++) {
             for (int j = 0; j < 16; j++) {
-                Log.v(TAG, "i: " + i + "; j: " + j);
                 flattenedArray[i * 16 + j] = jointTransforms[i][j];
-                Log.v(TAG, "Transform: " + flattenedArray[i * 16 + j]);
             }
         }
-//        glUniform4fv(uJointTransforms, 1, flattenedArray, 0);
         glUniformMatrix4fv(uJointTransforms,jointsNumber,false, flattenedArray,0);
-        float[] vertices2 = jointTransforms[0];
-//        Log.v(TAG, Arrays.toString(vertices2) + " ");
 
-//        GLES30.glBindVertexArray(VAO[0]);
-        glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
-        glUniformMatrix4fv(MVPloc, 1, false, MVP, 0);
-
-        // Lighting
-        Matrix.invertM(inverseModel, 0,modelM,0);
-        glUniformMatrix4fv(uInverseModel,1,true,inverseModel,0);
-
-//        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // Drawcall
         glDrawElements(GL_TRIANGLES, countFacesToElement,  GL_UNSIGNED_INT, 0);
-        GLES30.glBindVertexArray(0);
-        glUseProgram(0);
+
+        if (UNBIND_VAO) {
+            vao.unbind();
+        }
+        if (UNBIND_PROGRAM) {
+            glUseProgram(0);
+        }
     }
 }

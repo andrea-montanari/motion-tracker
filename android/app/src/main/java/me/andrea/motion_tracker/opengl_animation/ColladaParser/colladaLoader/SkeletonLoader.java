@@ -33,7 +33,6 @@ public class SkeletonLoader {
 	public SkeletonData extractBoneData(){
 		XmlNode headNode = armatureData.getChild("node");
 		JointData headJoint = loadJointData(headNode, true);
-		Log.v("SkeletonLoader", "Head joint name: " + headJoint.nameId);
 		return new SkeletonData(jointCount, headJoint);
 	}
 	
@@ -49,10 +48,6 @@ public class SkeletonLoader {
 		String nameId = jointNode.getAttribute("id");
 		String name = nameId.replace("Armature_", "");
 		int index = boneOrder.indexOf(name);
-		Log.v("SkeletonLoader", "boneOrder length: " + boneOrder.size());
-		Log.v("SkeletonLoader", "boneOrder length: " + boneOrder);
-		Log.v("SkeletonLoader", "nameId: " + nameId);
-		Log.v("SkeletonLoader", "index: " + index);
 		String[] matrixData = jointNode.getChild("matrix").getData().split(" ");
 		float[] matrix = convertData(matrixData);
 		float[] matrixResult = Arrays.copyOf(matrix, matrix.length);
@@ -62,7 +57,6 @@ public class SkeletonLoader {
 			Matrix.multiplyMM(matrixResult, 0, CORRECTION, 0, matrix, 0);
 		}
 		jointCount++;
-		Log.v("SkeletonLoader", "jointCount: " + jointCount);
 		return new JointData(index, nameId, matrixResult);
 	}
 	

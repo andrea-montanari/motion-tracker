@@ -63,7 +63,6 @@ public class AnimationLoader {
 		XmlNode transformData = jointData.getChildWithAttribute("source", "id", dataId);
 		String[] rawData = transformData.getChild("float_array").getData().split(" ");
 		Log.v("AnimationLoader", "Joint id: " + jointNameId);
-		Log.v("AnimationLoader", "Joint data id: " + dataId);
 		Log.v("AnimationLoader", "Joint animation output: " + Arrays.toString(rawData));
 		processTransforms(jointNameId, rawData, frames, jointNameId.equals(rootNodeId));
 	}
@@ -86,7 +85,7 @@ public class AnimationLoader {
 				matrixData[j] = Float.parseFloat(rawData[i*16 + j]);
 			}
 			float[] transform = new float[16];
-			Log.v("AnimationLoader", "MatrixData: " + Arrays.toString(matrixData));
+//			Log.v("AnimationLoader", "MatrixData: " + Arrays.toString(matrixData));
 			Matrix.transposeM(transform, 0, matrixData, 0);
 			float[] transformCorrectionResult = Arrays.copyOf(transform, transform.length);
 			if(root){
@@ -97,30 +96,6 @@ public class AnimationLoader {
 		}
 	}
 
-//	private void processTransforms(String jointName, String[] rawData, KeyFrameData[] keyFrames, boolean root){
-//		FloatBuffer buffer = ByteBuffer.allocateDirect(16 * Float.BYTES).
-//				order(ByteOrder.nativeOrder())
-//				.asFloatBuffer();
-//		float[] matrixData = new float[16];
-//		for(int i=0;i<keyFrames.length;i++){
-//			for(int j=0;j<16;j++){
-//				matrixData[j] = Float.parseFloat(rawData[i*16 + j]);
-//			}
-//			Log.v("AnimationLoader", "MatrixData: " + Arrays.toString(matrixData));
-//			buffer.clear();
-//			buffer.put(matrixData);
-//			buffer.flip();
-//			float[] transform = new float[16];
-//			buffer.get(transform);
-//			Matrix.transposeM(transform, 0, matrixData, 0);
-//			if(root){
-//				//because up axis in Blender is different to up axis in game
-//				Matrix.multiplyMM(transform, 0, CORRECTION, 0, transform, 0);
-//			}
-//			keyFrames[i].addJointTransform(new JointTransformData(jointName, transform));
-//		}
-//	}
-	
 	private String findRootJointName(){
 		XmlNode skeleton = jointHierarchy.getChild("visual_scene").getChildWithAttribute("node", "id", "Armature");
 		return skeleton.getChild("node").getAttribute("id");

@@ -76,7 +76,6 @@ public class Animator {
 		}
 		increaseAnimationTime();
 		Map<String, float[]> currentPose = calculateCurrentAnimationPose();
-		Log.v("Animator", "currentPose 1: " + currentPose);
 		float[] parentTransform = new float[16];
 		Matrix.setIdentityM(parentTransform, 0);
 		applyPoseToJoints(currentPose, entity.getRootJoint(), parentTransform);
@@ -97,8 +96,6 @@ public class Animator {
 			animatedModel.stopAnimating();
 			animationTime = currentAnimation.getLength();
 		}
-		Log.v("Animator", "Animation time: " + animationTime);
-		Log.v("Animator", "Animation length: " + currentAnimation.getLength());
 	}
 
 	/**
@@ -122,10 +119,7 @@ public class Animator {
 	 */
 	private Map<String, float[]> calculateCurrentAnimationPose() {
 		KeyFrame[] frames = getPreviousAndNextFrames();
-		Log.v("Animator", "Frames timestamps - frame[0]: " + frames[0].getTimeStamp() + ", frame[1]: " + frames[1].getTimeStamp());
-		Log.v("Animator", "Frames keyframes - frame[0]: " + frames[0].getJointKeyFrames() + ", frame[1]: " + frames[1].getJointKeyFrames());
 		float progression = calculateProgression(frames[0], frames[1]);
-		Log.v("Animator", "Progression: " + progression);
 		return interpolatePoses(frames[0], frames[1], progression);
 	}
 
@@ -167,18 +161,13 @@ public class Animator {
 		Log.v("Animator", "currentPose: " + Arrays.toString(currentLocalTransform));
 		float[] currentTransform = new float[16];
 		Matrix.setIdentityM(currentTransform,0);
-		Log.v("Animator", "joint name: " + joint.name);
-		Log.v("Animator", "currentPose keys: " + currentPose.keySet());
-		Log.v("Animator", "joint children: " + joint.children);
-			Log.i("Animator", "Applying pose");
-			Matrix.multiplyMM(currentTransform, 0, parentTransform, 0, currentLocalTransform, 0);
+		Log.i("Animator", "Applying pose");
+		Matrix.multiplyMM(currentTransform, 0, parentTransform, 0, currentLocalTransform, 0);
 		for (Joint childJoint : joint.children) {
-			Log.v("Animator", "child joint: " + childJoint.name);
 			applyPoseToJoints(currentPose, childJoint, currentTransform);
 		}
 		float[] currentTransformResult = new float[16];
-			Matrix.multiplyMM(currentTransformResult, 0, currentTransform, 0, joint.getInverseBindTransform(), 0);
-			Log.v("Animator", "Animator's transform: " + Arrays.toString(currentTransform));
+		Matrix.multiplyMM(currentTransformResult, 0, currentTransform, 0, joint.getInverseBindTransform(), 0);
 		joint.setAnimationTransform(currentTransformResult);
 	}
 
@@ -245,11 +234,8 @@ public class Animator {
 		for (String jointName : previousFrame.getJointKeyFrames().keySet()) {
 			JointTransform previousTransform = previousFrame.getJointKeyFrames().get(jointName);
 			JointTransform nextTransform = nextFrame.getJointKeyFrames().get(jointName);
-			Log.v("Animator", "Previous transform: " + Arrays.toString(previousTransform.getLocalTransform()));
-			Log.v("Animator", "Next transform: " + Arrays.toString(nextTransform.getLocalTransform()));
 			JointTransform currentTransform = JointTransform.interpolate(previousTransform, nextTransform, progression);
 			currentPose.put(jointName, currentTransform.getLocalTransform());
-			Log.v("Animator", "Current pose: " + Arrays.toString(currentTransform.getLocalTransform()));
 		}
 		return currentPose;
 	}

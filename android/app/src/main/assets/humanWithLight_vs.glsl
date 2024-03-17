@@ -12,7 +12,6 @@ uniform mat4 MVP;
 uniform mat4 modelMatrix;
 uniform mat4 inverseModel;
 uniform mat4 jointTransforms[MAX_JOINTS];
-//uniform mat4 projectionViewMatrix;
 out vec3 fragModel;
 out vec3 transfNormal;
 out vec4 color;
@@ -23,21 +22,18 @@ void main() {
     vec4 totalNormal = vec4(0.0);
 
     color = vec4(aColor, 1);
-     //transf normal
     fragModel = vec3(modelMatrix * vec4(inPosition,1)); //transf vertex pos
 
     for(int i=0;i<MAX_WEIGHTS;i++){
         mat4 jointTransform = jointTransforms[in_jointIndices[i]];
         vec4 posePosition = jointTransform * vec4(inPosition, 1.0);
-//        totalLocalPos += posePosition * in_weights[i];
+        totalLocalPos += posePosition * in_weights[i];
         totalLocalPos += posePosition * 0.1;
 
         vec4 worldNormal = jointTransform * vec4(in_normal, 0.0);
         totalNormal += worldNormal * in_weights[i];
     }
 
-//    gl_Position = MVP * vec4(inPosition,1);
-//    gl_Position = projectionViewMatrix * totalLocalPos * MVP;
     transfNormal = vec3(inverseModel * vec4(totalNormal.xyz, 1));
     gl_Position = MVP * totalLocalPos;
 }

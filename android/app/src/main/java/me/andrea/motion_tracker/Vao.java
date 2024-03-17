@@ -12,4 +12,8 @@ public class Vao {
     public void bind() {
         GLES30.glBindVertexArray(VAO[0]);
     }
+
+    public void unbind() {
+        GLES30.glBindVertexArray(0);
+    }
 }

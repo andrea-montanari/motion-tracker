@@ -106,7 +106,6 @@ public class JointTransform {
 		float x = start.x + (end.x - start.x) * progression;
 		float y = start.y + (end.y - start.y) * progression;
 		float z = start.z + (end.z - start.z) * progression;
-		Log.v("JointTransform", "Interpolation result: x:" + x + ", y: " + y + ", z: " + z);
 		return new Vector3f(x, y, z);
 	}
 

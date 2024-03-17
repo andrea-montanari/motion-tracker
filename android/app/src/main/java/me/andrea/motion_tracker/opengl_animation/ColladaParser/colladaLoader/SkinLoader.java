@@ -37,11 +37,8 @@ public class SkinLoader {
 		XmlNode jointsNode = skinningData.getChildWithAttribute("source", "id", jointDataId).getChild("Name_array");
 		String[] names = jointsNode.getData().split(" ");
 		Log.v("SkinLoader", "Names: " + Arrays.toString(names));
-		Log.v("SkinLoader", "jointsNode.getData(): " + jointsNode.getData());
-		Log.v("SkinLoader", "jointsNode.getData().split(): " + Arrays.toString(jointsNode.getData().split(" ")));
 		List<String> jointsList = new ArrayList<String>();
 		for (String name : names) {
-			Log.v("SkinLoader", "Joint name: " + name);
 			jointsList.add(name);
 		}
 		return jointsList;
@@ -79,7 +76,6 @@ public class SkinLoader {
 				int jointId = Integer.parseInt(rawData[pointer++]);
 				int weightId = Integer.parseInt(rawData[pointer++]);
 				skinData.addJointEffect(jointId, weights[weightId]);
-//				Log.v("SkinLoader", "Weights not limited: " + Arrays.toString(weights));
 			}
 			skinData.limitJointNumber(maxWeights);
 			skinningData.add(skinData);

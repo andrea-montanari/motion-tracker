@@ -165,14 +165,8 @@ public class AnimatedModel {
 	 *            - the array of joint transforms that is being filled.
 	 */
 	private void addJointsToArray(Joint headJoint, float[][] jointMatrices) {
-		Log.v("AnimatedModel", "headJoint.index: " + headJoint.index);
-		Log.v("AnimatedModel", "headJoint.name: " + headJoint.name);
-		Log.v("AnimatedModel", "jointMatrices length: " + jointMatrices.length);
-		if (headJoint.index != -1){ // && (Objects.equals(headJoint.name, "Armature_UpperLeg_L") || Objects.equals(headJoint.name, "Armature_LowerLeg_L"))) {
-//			if (headJoint.name == "Armature_UpperLeg_L") {
+		if (headJoint.index != -1){
 			jointMatrices[headJoint.index] = headJoint.getAnimatedTransform();
-			Log.v("AnimatedModel", "headJoint animatedTransform: " + Arrays.toString(jointMatrices[headJoint.index]));
-//			}
 		} else {
 			Log.i("AnimatedModel", headJoint.name + " not used for skinning");
 		}
