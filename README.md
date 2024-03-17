@@ -1,16 +1,21 @@
 # multi_sensor_collector
 
-A new Flutter project.
+Flutter app that allows you to connect up to 8 Movesense sensors and retrieve inertial data.
 
-## Getting Started
+The user has to configure the sensors based on the position in which they are placed on the body.
 
-This project is a starting point for a Flutter application.
+The allowed positions are:
+* chest
+* left wrist
+* right wrist
+* belt
+* left pocket
+* right pocket
+* left ankle
+* right ankle
 
-A few resources to get you started if this is your first Flutter project:
+## Animation
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+To make the application more interactive, an animated model that reflects the movements of the user has bees added.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+It currently only shows leg movement corresponding to the sensors positioned on the ankles.
