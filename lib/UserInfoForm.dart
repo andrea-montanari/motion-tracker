@@ -28,8 +28,8 @@ class UserInfoFormState extends State<UserInfoForm>{
   static const String userIdLabel = "ID number";
   static const String userAgeLabel = "Age";
   static const String userSexLabel = "Sex";
-  static const String userHeightLabel = "Height";
-  static const String userWeightLabel = "Weight";
+  static const String userHeightLabel = "Height (cm)";
+  static const String userWeightLabel = "Weight (kg)";
   static const String valueEmptyErrorMessage = "This field is required";
   static const String notIntegerErrorMessage = "Please enter a non-negative whole number";
   static const String sexDropdownDefaultValue = "--";
