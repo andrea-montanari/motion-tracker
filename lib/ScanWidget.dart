@@ -9,6 +9,7 @@ import 'package:multi_sensor_collector/Utils/InfoResponse.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
+import 'DeviceListModel.dart';
 import 'DeviceModel.dart';
 
 class ScanWidget extends StatefulWidget {
@@ -108,19 +109,22 @@ class _ScanWidgetState extends State<ScanWidget> {
     });
   }
 
-  Widget _buildDeviceItem(BuildContext context, int index) {
+  Widget _buildDeviceItem(BuildContext context, int index, List<Device> deviceList) {
     return Card(
       child: ListTile(
-        title: Text(model.deviceList[index].name!),
-        subtitle: Text(model.deviceList[index].address!),
-        trailing: Text(model.deviceList[index].connectionStatus.statusName),
-        onTap: () => {
-          if (model.deviceList[index].connectionStatus == DeviceConnectionStatus.NOT_CONNECTED) {
-            model.connectToDevice(model.deviceList[index])
-          } else {
-            model.disconnectFromDevice(model.deviceList[index])
-          }
-        },
+        title: Text(deviceList[index].name!),
+        subtitle: Text(deviceList[index].address!),
+        trailing: Text(deviceList[index].connectionStatus.statusName),
+        enabled: !recording,
+        onTap: () =>
+            {
+              if (deviceList[index].connectionStatus == DeviceConnectionStatus.NOT_CONNECTED) {
+                model.connectToDevice(deviceList[index])
+              } else {
+                model.disconnectFromDevice(deviceList[index]),
+                model.configuredDeviceList = DeviceListModel(),
+              }
+            },
       ),
     );
   }
@@ -128,9 +132,9 @@ class _ScanWidgetState extends State<ScanWidget> {
   Widget _buildDeviceList(List<Device> deviceList) {
     return new Expanded(
         child: new ListView.builder(
-            itemCount: model.deviceList.length,
+            itemCount: deviceList.length,
             itemBuilder: (BuildContext context, int index) =>
-                _buildDeviceItem(context, index)));
+                _buildDeviceItem(context, index, deviceList)));
   }
 
   void onScanButtonPressed() {
@@ -219,16 +223,22 @@ class _ScanWidgetState extends State<ScanWidget> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  ElevatedButton(
-                    onPressed: onScanButtonPressed,
-                    child: Text(model.scanButtonText),
-                  ),
+
+                  // Scan button
+                  if (model.configuredDeviceList.devices.isEmpty)
+                    ElevatedButton(
+                      onPressed: onScanButtonPressed,
+                      child: Text(model.scanButtonText),
+                    ),
 
                   // Connected devices count
                   Text(model.connectedDevicesText + model.connectedDeviceList.length.toString()),
 
                   // Active devices
-                  _buildDeviceList(model.deviceList),
+                  model.configuredDeviceList.devices.isEmpty ?
+                    _buildDeviceList(model.deviceList)
+                  :
+                    _buildDeviceList(model.connectedDeviceList),
 
                   // Configure devices button
                   ElevatedButton(
