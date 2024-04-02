@@ -99,14 +99,19 @@ class DeviceListModel extends ChangeNotifier {
     }
   }
 
-  stopRecording() async {
+  Future<bool> stopRecording() async {
     final DateTime now = DateTime.now();
     final DateFormat dateFormat = DateFormat("yyyy-MM-dd_HH-mm-ss");
     _nowFormatted = dateFormat.format(now);
     for (final device in devices) {
       await device.unsubscribeFromIMU9();
-      writeImuDataToCsvFile(device);
+      try {
+        writeImuDataToCsvFile(device);
+      } catch (e) {
+        return false;
+      }
     }
+    return true;
   }
 
   Future<void> writeImuDataToCsvFile(DeviceModel device) async {
