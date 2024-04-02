@@ -34,6 +34,7 @@ class _ScanWidgetState extends State<ScanWidget> {
   static const String appBarTitle = "Motion Tracker";
   static const String devicesSynchronization = "Devices synchronization...";
   static const String synchronizationFailed = "Devices synchronization failed, try again.";
+  static const String savingData = "Saving data...";
   static const String ok = "Ok";
 
   @override
@@ -188,9 +189,23 @@ class _ScanWidgetState extends State<ScanWidget> {
     );
   }
 
+  Future<bool?> _showSavingDataDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) {
+        return const AlertDialog(
+          title: Text(savingData),
+        );
+      },
+    );
+  }
+
   Future<void> onRecordButtonPressed(var rate, String activity) async {
     if (recording) {
-      model.configuredDeviceList.stopRecording();
+      _showSavingDataDialog();
+      await model.configuredDeviceList.stopRecording();
+      Navigator.pop(context);
       setState(() {
         recording = !recording;
       });
