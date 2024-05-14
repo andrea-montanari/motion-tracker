@@ -38,7 +38,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
   static const String getInPosition = "Stand up with arms extended along the body and perform the movement at the end of the countdown";
   static const String cancel = "Cancel";
   static const String movementDetection = "Movement detection";
-  static const String liftLimb = "Move your POSITION_PLACEHOLDER";
+  static const String moveSensor = "Move the POSITION_PLACEHOLDER sensor";
   static const String confirmResetConf = "Do you confirm that you want to reset the configuration?";
   static const String configIncomplete = "Fill all the user information and configure at least one device";
   static const String devicesConfiguration = "Configuration";
@@ -164,7 +164,7 @@ class _DevicesConfigurationPageState extends State<DevicesConfigurationPage> {
           content:  SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text(liftLimb.replaceAll("POSITION_PLACEHOLDER", bodyPart.name)),
+                Text(moveSensor.replaceAll("POSITION_PLACEHOLDER", bodyPart.name)),
               ],
             ),
           ),
