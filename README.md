@@ -75,12 +75,12 @@ The application allows users to choose a specific activity from a drop-down menu
 * **Office**: performing computer office work
 Once the data recording begins, the application associates the chosen activity with the collected inertial data, ensuring that each dataset is labeled according to the user’s activity at the time of recording.
 
-## Data Gathering
+### Data Gathering
 Initiating recording by pressing the ’Start recording’ button triggers the synchronization process with the connected sensors, beginning with setting the current Coordinated Universal Time (UTC) on each device via PUT requests. To ensure accuracy, this synchronization is performed three times per sensor.
 Afterwards, the application retrieves the current UTC and relative time (the time elapsed from the last UTC reset) and begins recording and retrieving data utilising a subscription method from the mdsflutter plugin.
 To cease recording, the user presses the ’Stop recoding’ button, which sends an unsubscribe request to the sensors.
 
-## Data Saving
+### Data Saving
 In the data collection phase, the smartphone application retrieves inertial data from the sensors using Movesense’s subscription feature. This data is continuously transmitted from the sensor to the mobile device, where it is temporarily stored in a dictionary-like structure, specifically as a Dart List of Lists.
 When the recording is stopped, the application enriches the data structure with additional information including the initial and final UTCs and relative times, the user information and the sensor’s placement on the body. Subsequently, the structure
 is converted into CSV format and saved as a CSV file on the smartphone’s internal storage (under the "/Movesense" directory on Android and on the application support directory on IoS).
